@@ -290,8 +290,8 @@ def register():
 
     # Validate invite code
     invite = db.get_invite_code(invite_code)
-    if not invite or invite['is_used']:
-        return render_template('auth/register.html', errors=['Invalid or already used invite code.'], name=name, email=email, agency_name=agency_name)
+    if not invite:
+        return render_template('auth/register.html', errors=['Invalid invite code.'], name=name, email=email, agency_name=agency_name)
 
     # Check duplicate email
     if db.get_owner_by_email(email):
@@ -309,7 +309,7 @@ def register():
         db.seed_agency_defaults(agency_id)
 
     owner_id = db.create_owner(agency_id, name, email, hash_password(password))
-    db.use_invite_code(invite_code, owner_id)
+    db.record_invite_usage(invite_code, owner_id)
 
     session['owner_id'] = owner_id
     return redirect(url_for('admin_dashboard'))

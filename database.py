@@ -331,16 +331,12 @@ def create_invite_code(agency_id=None, created_by='system'):
     return code
 
 
-def use_invite_code(code, used_by):
+def record_invite_usage(code, used_by):
     with get_db() as conn:
-        row = conn.execute('SELECT * FROM invite_codes WHERE code = ? AND is_used = 0', (code,)).fetchone()
-        if not row:
-            return None
         conn.execute(
-            'UPDATE invite_codes SET is_used = 1, used_by = ?, used_at = ? WHERE code = ?',
+            'UPDATE invite_codes SET used_by = ?, used_at = ? WHERE code = ?',
             (used_by, datetime.now().isoformat(), code),
         )
-        return dict(row)
 
 
 def get_invite_code(code):
