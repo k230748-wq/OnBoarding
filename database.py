@@ -250,6 +250,11 @@ def init_db():
                 created_at TEXT NOT NULL
             );
         ''')
+        # Seed default invite code
+        conn.execute(
+            'INSERT OR IGNORE INTO invite_codes (code, created_by, created_at) VALUES (?, ?, ?)',
+            ('STARTER2026', 'system', datetime.now().isoformat()),
+        )
     logger.info('Database initialized.')
 
 
