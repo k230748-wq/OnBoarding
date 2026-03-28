@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEO Keywords - {{ agency_name }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f4f5f7; color: #24292f; font-size: 14px;
+        }
+
+        /* ── Top Bar ── */
+        .top-bar {
+            background: #fff; padding: 14px 32px; border-bottom: 1px solid #d0d7de;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .top-bar-left { display: flex; align-items: center; gap: 16px; }
+        .top-bar-left h1 { font-size: 16px; font-weight: 600; color: #24292f; }
+        .top-bar-left .agency-label {
+            font-size: 12px; color: #656d76; background: #f6f8fa;
+            padding: 3px 10px; border-radius: 4px; border: 1px solid #d0d7de;
+        }
+        .top-bar-right { display: flex; align-items: center; gap: 10px; }
+        .btn {
+            padding: 7px 16px; border-radius: 6px; font-size: 13px; font-weight: 500;
+            cursor: pointer; font-family: inherit; border: 1px solid #d0d7de;
+            background: #fff; color: #24292f; transition: all 0.15s; text-decoration: none;
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn:hover { background: #f6f8fa; border-color: #b0b8c1; }
+        .btn-green {
+            background: #1a7f37; color: #fff; border-color: #1a7f37;
+        }
+        .btn-green:hover { background: #15692d; border-color: #15692d; }
+        .btn-primary {
+            background: #0969da; color: #fff; border-color: #0969da;
+        }
+        .btn-primary:hover { background: #0757b5; border-color: #0757b5; }
+
+        /* ── Summary Stats ── */
+        .stats-bar {
+            background: #fff; border-bottom: 1px solid #d0d7de;
+            padding: 12px 32px; display: flex; gap: 32px;
+        }
+        .stat-item { display: flex; flex-direction: column; }
+        .stat-value { font-size: 20px; font-weight: 700; color: #24292f; }
+        .stat-label { font-size: 11px; color: #656d76; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+        /* ── Page Body ── */
+        .page-body { max-width: 1200px; margin: 24px auto; padding: 0 24px; }
+
+        /* ── Data Table ── */
+        .table-container {
+            background: #fff; border: 1px solid #d0d7de; border-radius: 6px; overflow: hidden;
+        }
+        .cluster-header {
+            padding: 10px 16px; background: #f6f8fa; border-bottom: 1px solid #d0d7de;
+            font-size: 13px; font-weight: 600; color: #24292f;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .cluster-header .cluster-count {
+            font-size: 11px; font-weight: 500; color: #656d76;
+            background: #e8ecf0; padding: 1px 8px; border-radius: 10px;
+        }
+        table {
+            width: 100%; border-collapse: collapse;
+        }
+        thead th {
+            text-align: left; padding: 10px 16px; font-size: 12px; font-weight: 600;
+            color: #656d76; background: #f6f8fa; border-bottom: 1px solid #d0d7de;
+            text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap;
+            position: sticky; top: 0; z-index: 2;
+        }
+        tbody td {
+            padding: 10px 16px; border-bottom: 1px solid #d0d7de; font-size: 13px;
+            color: #24292f; vertical-align: middle;
+        }
+        tbody tr { cursor: pointer; transition: background 0.1s; }
+        tbody tr:hover { background: #f6f8fa; }
+        tbody tr:last-child td { border-bottom: none; }
+        .kw-text { font-weight: 500; }
+        .kw-volume { font-variant-numeric: tabular-nums; }
+
+        /* ── Badges ── */
+        .badge {
+            display: inline-block; padding: 2px 8px; border-radius: 4px;
+            font-size: 11px; font-weight: 600; text-transform: capitalize; white-space: nowrap;
+        }
+        .badge-diff-low { background: #dafbe1; color: #116329; }
+        .badge-diff-medium { background: #fff4d4; color: #8a6d10; }
+        .badge-diff-high { background: #ffd7d5; color: #a40e26; }
+        .badge-prio-high { background: #ffd7d5; color: #a40e26; }
+        .badge-prio-medium { background: #fff4d4; color: #8a6d10; }
+        .badge-prio-low { background: #e8ecf0; color: #656d76; }
+        .badge-status-research { background: #e8ecf0; color: #656d76; }
+        .badge-status-targeting { background: #ddf4ff; color: #0550ae; }
+        .badge-status-ranking { background: #dafbe1; color: #116329; }
+        .badge-status-completed { background: #eddeff; color: #6639ba; }
+        .badge-intent {
+            background: #f6f8fa; color: #656d76; border: 1px solid #d0d7de;
+        }
+
+        /* ── Action Buttons ── */
+        .row-actions { display: flex; gap: 6px; }
+        .row-btn {
+            padding: 4px 10px; font-size: 12px; border-radius: 4px;
+            border: 1px solid #d0d7de; background: #fff; color: #656d76;
+            cursor: pointer; font-family: inherit; transition: all 0.15s;
+        }
+        .row-btn:hover { background: #f6f8fa; color: #24292f; border-color: #b0b8c1; }
+        .row-btn-delete { color: #a40e26; border-color: #ffc1bc; }
+        .row-btn-delete:hover { background: #fff0ee; border-color: #a40e26; }
+
+        /* ── Empty State ── */
+        .empty-state {
+            text-align: center; padding: 64px 24px;
+        }
+        .empty-state h3 { font-size: 16px; font-weight: 600; color: #24292f; margin-bottom: 6px; }
+        .empty-state p { font-size: 14px; color: #656d76; margin-bottom: 20px; }
+
+        /* ── Modal ── */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.4); z-index: 100;
+            display: none; align-items: center; justify-content: center;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: #fff; border-radius: 8px; width: 560px; max-width: 95vw;
+            max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        }
+        .modal-header {
+            padding: 16px 20px; border-bottom: 1px solid #d0d7de;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .modal-header h2 { font-size: 15px; font-weight: 600; color: #24292f; }
+        .modal-close {
+            background: none; border: none; font-size: 20px; color: #656d76;
+            cursor: pointer; padding: 4px 8px; border-radius: 4px; line-height: 1;
+        }
+        .modal-close:hover { background: #f6f8fa; color: #24292f; }
+        .modal-body { padding: 20px; }
+        .modal-footer {
+            padding: 14px 20px; border-top: 1px solid #d0d7de;
+            display: flex; justify-content: flex-end; gap: 8px;
+        }
+        .form-group { margin-bottom: 14px; }
+        .form-group label {
+            display: block; font-size: 12px; font-weight: 600; color: #24292f;
+            margin-bottom: 5px;
+        }
+        .form-control {
+            width: 100%; padding: 8px 12px; border: 1px solid #d0d7de; border-radius: 6px;
+            font-size: 13px; font-family: inherit; color: #24292f; background: #fff;
+            outline: none; transition: border-color 0.15s;
+        }
+        .form-control:focus { border-color: #0969da; box-shadow: 0 0 0 3px rgba(9,105,218,0.15); }
+        textarea.form-control { resize: vertical; min-height: 60px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        /* ── Toast ── */
+        .toast {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-80px);
+            background: #24292f; color: #fff; padding: 10px 24px; border-radius: 6px;
+            font-size: 13px; font-weight: 500; z-index: 200; transition: transform 0.25s ease;
+            white-space: nowrap;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+
+        /* ── Loading Spinner ── */
+        .spinner-inline {
+            width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff; border-radius: 50%; animation: spin 0.6s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Responsive ── */
+        @media (max-width: 768px) {
+            .top-bar { padding: 12px 16px; flex-wrap: wrap; gap: 10px; }
+            .stats-bar { padding: 12px 16px; flex-wrap: wrap; gap: 16px; }
+            .page-body { padding: 0 12px; }
+            .table-container { overflow-x: auto; }
+            .form-row { grid-template-columns: 1fr; }
+            .modal { width: 95vw; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="top-bar">
+    <div class="top-bar-left">
+        <h1>SEO Keywords</h1>
+        <span class="agency-label">{{ agency_name }}</span>
+    </div>
+    <div class="top-bar-right">
+        <a href="/a/{{ slug }}/dashboard/{{ onboarding_id }}/tools" class="btn">Back</a>
+        <button class="btn btn-green" id="ai-research-btn" onclick="aiResearch()">AI Research</button>
+        <button class="btn btn-primary" onclick="openModal()">+ Add Keyword</button>
+    </div>
+</div>
+
+<!-- Summary Stats -->
+<div class="stats-bar">
+    <div class="stat-item">
+        <span class="stat-value" id="stat-total">{{ keywords|length }}</span>
+        <span class="stat-label">Total Keywords</span>
+    </div>
+    <div class="stat-item">
+        <span class="stat-value" id="stat-clusters">{{ keywords|map(attribute='cluster')|unique|list|length }}</span>
+        <span class="stat-label">Clusters</span>
+    </div>
+    <div class="stat-item">
+        <span class="stat-value" id="stat-high">{{ keywords|selectattr('priority','equalto','high')|list|length }}</span>
+        <span class="stat-label">High Priority</span>
+    </div>
+    <div class="stat-item">
+        <span class="stat-value" id="stat-targeting">{{ keywords|selectattr('status','equalto','targeting')|list|length }}</span>
+        <span class="stat-label">Targeting</span>
+    </div>
+</div>
+
+<!-- Page Body -->
+<div class="page-body">
+
+    {% if keywords %}
+    <div class="table-container" id="table-container">
+        {% set clusters = keywords|map(attribute='cluster')|unique|list %}
+        {% for cluster in clusters|sort %}
+        {% set cluster_keywords = keywords|selectattr('cluster','equalto',cluster)|list %}
+        <div class="cluster-header">
+            {{ cluster }}
+            <span class="cluster-count">{{ cluster_keywords|length }}</span>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Keyword</th>
+                    <th>Volume</th>
+                    <th>Difficulty</th>
+                    <th>Intent</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th style="text-align:right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for kw in cluster_keywords %}
+                <tr onclick="openModal({{ kw|tojson|e }})" id="row-{{ kw.id }}">
+                    <td class="kw-text">{{ kw.keyword }}</td>
+                    <td class="kw-volume">{{ kw.search_volume|default(0)|int }}</td>
+                    <td><span class="badge badge-diff-{{ kw.difficulty }}">{{ kw.difficulty }}</span></td>
+                    <td><span class="badge badge-intent">{{ kw.intent }}</span></td>
+                    <td><span class="badge badge-prio-{{ kw.priority }}">{{ kw.priority }}</span></td>
+                    <td><span class="badge badge-status-{{ kw.status }}">{{ kw.status }}</span></td>
+                    <td style="text-align:right;">
+                        <div class="row-actions" style="justify-content:flex-end;">
+                            <button class="row-btn" onclick="event.stopPropagation();openModal({{ kw|tojson|e }})">Edit</button>
+                            <button class="row-btn row-btn-delete" onclick="event.stopPropagation();deleteKeyword('{{ kw.id }}')">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="table-container">
+        <div class="empty-state" id="empty-state">
+            <h3>No keywords yet</h3>
+            <p>Add keywords manually or use AI Research to generate keyword suggestions.</p>
+            <button class="btn btn-green" onclick="aiResearch()">AI Research</button>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h2 id="modal-title">Add Keyword</h2>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="kw-id" value="">
+            <div class="form-group">
+                <label for="kw-keyword">Keyword</label>
+                <input type="text" class="form-control" id="kw-keyword" placeholder="Enter keyword or phrase">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="kw-cluster">Cluster</label>
+                    <input type="text" class="form-control" id="kw-cluster" placeholder="e.g. Brand, Product, Blog">
+                </div>
+                <div class="form-group">
+                    <label for="kw-volume">Search Volume</label>
+                    <input type="number" class="form-control" id="kw-volume" placeholder="0" min="0">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="kw-difficulty">Difficulty</label>
+                    <select class="form-control" id="kw-difficulty">
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="kw-intent">Intent</label>
+                    <select class="form-control" id="kw-intent">
+                        <option value="informational">Informational</option>
+                        <option value="commercial">Commercial</option>
+                        <option value="transactional">Transactional</option>
+                        <option value="navigational">Navigational</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="kw-priority">Priority</label>
+                    <select class="form-control" id="kw-priority">
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="kw-status">Status</label>
+                    <select class="form-control" id="kw-status">
+                        <option value="research">Research</option>
+                        <option value="targeting">Targeting</option>
+                        <option value="ranking">Ranking</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="kw-notes">Notes</label>
+                <textarea class="form-control" id="kw-notes" placeholder="Optional notes"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" id="modal-save-btn" onclick="saveKeyword()">Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+const BASE = '/a/{{ slug }}/dashboard/{{ onboarding_id }}/keywords';
+
+/* ── Toast ── */
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+/* ── Modal ── */
+function openModal(kw) {
+    const overlay = document.getElementById('modal-overlay');
+    const title = document.getElementById('modal-title');
+
+    if (kw && kw.id) {
+        title.textContent = 'Edit Keyword';
+        document.getElementById('kw-id').value = kw.id;
+        document.getElementById('kw-keyword').value = kw.keyword || '';
+        document.getElementById('kw-cluster').value = kw.cluster || '';
+        document.getElementById('kw-volume').value = kw.search_volume || 0;
+        document.getElementById('kw-difficulty').value = kw.difficulty || 'low';
+        document.getElementById('kw-intent').value = kw.intent || 'informational';
+        document.getElementById('kw-priority').value = kw.priority || 'medium';
+        document.getElementById('kw-status').value = kw.status || 'research';
+        document.getElementById('kw-notes').value = kw.notes || '';
+    } else {
+        title.textContent = 'Add Keyword';
+        document.getElementById('kw-id').value = '';
+        document.getElementById('kw-keyword').value = '';
+        document.getElementById('kw-cluster').value = '';
+        document.getElementById('kw-volume').value = '';
+        document.getElementById('kw-difficulty').value = 'low';
+        document.getElementById('kw-intent').value = 'informational';
+        document.getElementById('kw-priority').value = 'medium';
+        document.getElementById('kw-status').value = 'research';
+        document.getElementById('kw-notes').value = '';
+    }
+
+    overlay.classList.add('show');
+    setTimeout(() => document.getElementById('kw-keyword').focus(), 100);
+}
+
+function closeModal(e) {
+    if (e && e.target !== e.currentTarget) return;
+    document.getElementById('modal-overlay').classList.remove('show');
+}
+
+/* ── Save (Create / Update) ── */
+function saveKeyword() {
+    const id = document.getElementById('kw-id').value;
+    const keyword = document.getElementById('kw-keyword').value.trim();
+    if (!keyword) {
+        showToast('Keyword is required.');
+        return;
+    }
+
+    const payload = {
+        keyword: keyword,
+        cluster: document.getElementById('kw-cluster').value.trim() || 'Uncategorized',
+        search_volume: parseInt(document.getElementById('kw-volume').value) || 0,
+        difficulty: document.getElementById('kw-difficulty').value,
+        intent: document.getElementById('kw-intent').value,
+        priority: document.getElementById('kw-priority').value,
+        status: document.getElementById('kw-status').value,
+        notes: document.getElementById('kw-notes').value.trim()
+    };
+
+    const saveBtn = document.getElementById('modal-save-btn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving...';
+
+    let url = BASE;
+    let method = 'POST';
+    if (id) {
+        url = BASE + '/' + id;
+        method = 'PUT';
+    }
+
+    fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(r => r.json())
+    .then(data => {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save';
+
+        if (data.error) {
+            showToast(data.error);
+            return;
+        }
+
+        closeModal();
+        showToast(id ? 'Keyword updated.' : 'Keyword added.');
+        location.reload();
+    })
+    .catch(() => {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save';
+        showToast('Failed to save keyword.');
+    });
+}
+
+/* ── Delete ── */
+function deleteKeyword(id) {
+    if (!confirm('Delete this keyword?')) return;
+
+    fetch(BASE + '/' + id, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) {
+            showToast(data.error);
+            return;
+        }
+        showToast('Keyword deleted.');
+        const row = document.getElementById('row-' + id);
+        if (row) {
+            const tbody = row.parentElement;
+            row.remove();
+            /* If tbody is now empty, remove the cluster group (header + table) */
+            if (tbody && tbody.children.length === 0) {
+                const table = tbody.closest('table');
+                if (table && table.previousElementSibling && table.previousElementSibling.classList.contains('cluster-header')) {
+                    table.previousElementSibling.remove();
+                }
+                if (table) table.remove();
+            }
+            updateStats();
+            /* If no tables left, show empty state */
+            const container = document.getElementById('table-container');
+            if (container && container.querySelectorAll('table').length === 0) {
+                container.innerHTML = '<div class="empty-state" id="empty-state"><h3>No keywords yet</h3><p>Add keywords manually or use AI Research to generate keyword suggestions.</p><button class="btn btn-green" onclick="aiResearch()">AI Research</button></div>';
+            }
+        }
+    })
+    .catch(() => showToast('Failed to delete keyword.'));
+}
+
+/* ── AI Research ── */
+function aiResearch() {
+    const btn = document.getElementById('ai-research-btn');
+    const origText = btn.textContent;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-inline"></span> Researching...';
+
+    fetch(BASE + '/ai-generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.textContent = origText;
+
+        if (data.error) {
+            showToast(data.error);
+            return;
+        }
+
+        const count = data.count || (data.keywords ? data.keywords.length : 0);
+        showToast('AI generated ' + count + ' keyword' + (count !== 1 ? 's' : '') + '.');
+        location.reload();
+    })
+    .catch(() => {
+        btn.disabled = false;
+        btn.textContent = origText;
+        showToast('AI research failed. Please try again.');
+    });
+}
+
+/* ── Update stat counters after DOM changes ── */
+function updateStats() {
+    const rows = document.querySelectorAll('tbody tr');
+    let total = rows.length;
+    let clusters = new Set();
+    let highPrio = 0;
+    let targeting = 0;
+
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length >= 6) {
+            /* Cluster is from the cluster-header above the table */
+            const table = row.closest('table');
+            if (table && table.previousElementSibling) {
+                const headerText = table.previousElementSibling.textContent.trim();
+                clusters.add(headerText);
+            }
+            const prioText = cells[4] ? cells[4].textContent.trim().toLowerCase() : '';
+            const statusText = cells[5] ? cells[5].textContent.trim().toLowerCase() : '';
+            if (prioText === 'high') highPrio++;
+            if (statusText === 'targeting') targeting++;
+        }
+    });
+
+    document.getElementById('stat-total').textContent = total;
+    document.getElementById('stat-clusters').textContent = clusters.size;
+    document.getElementById('stat-high').textContent = highPrio;
+    document.getElementById('stat-targeting').textContent = targeting;
+}
+
+/* ── Keyboard shortcut: Escape to close modal ── */
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeModal();
+});
+</script>
+</body>
+</html>

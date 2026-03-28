@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audience Personas - {{ agency_name }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f5f7; color: #333; min-height: 100vh; }
+
+        /* ── Top Bar ── */
+        .top-bar {
+            background: #fff; padding: 0 32px; height: 56px; border-bottom: 1px solid #e1e4e8;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .tb-left { display: flex; align-items: center; gap: 12px; }
+        .tb-left h1 { font-size: 16px; font-weight: 700; color: #1a1a2e; letter-spacing: -0.3px; }
+        .tb-left .separator { width: 1px; height: 20px; background: #e1e4e8; }
+        .tb-left .agency { font-size: 13px; color: #8b949e; }
+        .tb-actions { display: flex; gap: 8px; align-items: center; }
+        .btn {
+            padding: 7px 14px; border-radius: 6px; font-size: 13px; font-weight: 500;
+            border: 1px solid #d0d7de; background: #fff; color: #24292f; cursor: pointer;
+            font-family: inherit; transition: all 0.12s; text-decoration: none;
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn:hover { background: #f6f8fa; border-color: #bbb; }
+        .btn-green { background: #2da44e; color: #fff; border-color: #2da44e; }
+        .btn-green:hover { background: #218838; border-color: #218838; }
+        .btn-primary { background: #1a1a2e; color: #fff; border-color: #1a1a2e; }
+        .btn-primary:hover { background: #2d2d4e; border-color: #2d2d4e; }
+
+        /* ── Page Body ── */
+        .page-body { max-width: 880px; margin: 28px auto; padding: 0 24px; }
+
+        /* ── Persona Card ── */
+        .persona-card {
+            background: #fff; border-radius: 10px; border: 1px solid #e1e4e8;
+            margin-bottom: 20px; overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .persona-header {
+            padding: 24px 28px; display: flex; align-items: flex-start; justify-content: space-between;
+            border-left: 4px solid #ccc;
+        }
+        .persona-header-info { flex: 1; }
+        .persona-name { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+        .persona-meta { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 4px; }
+        .persona-meta span { font-size: 13px; color: #57606a; }
+        .persona-actions { display: flex; gap: 8px; flex-shrink: 0; margin-left: 16px; }
+        .btn-sm {
+            padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 500;
+            border: 1px solid #d0d7de; background: #fff; color: #57606a; cursor: pointer;
+            font-family: inherit; transition: all 0.12s;
+        }
+        .btn-sm:hover { background: #f6f8fa; border-color: #bbb; color: #24292f; }
+        .btn-sm-del { color: #cf222e; border-color: #fecaca; }
+        .btn-sm-del:hover { background: #fff1f0; border-color: #cf222e; }
+
+        /* ── Card Sections ── */
+        .persona-section {
+            padding: 16px 28px; border-top: 1px solid #f0f0f0;
+        }
+        .section-label {
+            font-size: 10px; font-weight: 600; color: #8b949e; text-transform: uppercase;
+            letter-spacing: 0.8px; margin-bottom: 6px;
+        }
+        .section-value {
+            font-size: 14px; line-height: 1.6; color: #444;
+        }
+
+        .persona-grid {
+            display: grid; grid-template-columns: 1fr 1fr; border-top: 1px solid #f0f0f0;
+        }
+        .persona-grid-cell {
+            padding: 16px 28px;
+        }
+        .persona-grid-cell:nth-child(odd) {
+            border-right: 1px solid #f0f0f0;
+        }
+        .persona-grid + .persona-grid {
+            border-top: 1px solid #f0f0f0;
+        }
+
+        /* ── Empty State ── */
+        .empty-state {
+            text-align: center; padding: 64px 20px; color: #8b949e;
+        }
+        .empty-state-icon {
+            width: 56px; height: 56px; border-radius: 50%; background: #f0f0f3;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 16px; font-size: 24px; color: #bbb;
+        }
+        .empty-state h3 { font-size: 16px; font-weight: 600; color: #1a1a2e; margin-bottom: 6px; }
+        .empty-state p { font-size: 14px; }
+
+        /* ── Modal Overlay ── */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4); z-index: 500;
+            display: none; align-items: center; justify-content: center;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal {
+            background: #fff; border-radius: 12px; width: 640px; max-width: 94vw;
+            max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+        }
+        .modal-head {
+            padding: 20px 24px; border-bottom: 1px solid #e1e4e8;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .modal-head h2 { font-size: 16px; font-weight: 700; color: #1a1a2e; }
+        .modal-close {
+            width: 32px; height: 32px; border-radius: 6px; border: none;
+            background: transparent; cursor: pointer; font-size: 18px; color: #8b949e;
+            display: flex; align-items: center; justify-content: center; transition: all 0.12s;
+        }
+        .modal-close:hover { background: #f6f8fa; color: #24292f; }
+        .modal-body { padding: 24px; }
+        .form-group { margin-bottom: 16px; }
+        .form-label {
+            display: block; font-size: 12px; font-weight: 600; color: #57606a;
+            margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.4px;
+        }
+        .form-input, .form-textarea {
+            width: 100%; padding: 9px 12px; border: 1px solid #d0d7de; border-radius: 6px;
+            font-size: 14px; font-family: inherit; color: #24292f; outline: none;
+            transition: border-color 0.12s;
+        }
+        .form-input:focus, .form-textarea:focus { border-color: #0969da; box-shadow: 0 0 0 3px rgba(9,105,218,0.12); }
+        .form-textarea { resize: vertical; min-height: 72px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        /* ── Color Picker ── */
+        .color-picker { display: flex; gap: 10px; padding-top: 4px; }
+        .color-swatch {
+            width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+            border: 3px solid transparent; transition: all 0.12s;
+        }
+        .color-swatch:hover { transform: scale(1.15); }
+        .color-swatch.selected { border-color: #1a1a2e; box-shadow: 0 0 0 2px #fff, 0 0 0 4px #1a1a2e; }
+
+        .modal-foot {
+            padding: 16px 24px; border-top: 1px solid #e1e4e8;
+            display: flex; justify-content: flex-end; gap: 8px;
+        }
+
+        /* ── Toast ── */
+        .toast-msg {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-80px);
+            background: #1a1a2e; color: #fff; padding: 12px 24px; border-radius: 8px;
+            font-size: 14px; z-index: 600; transition: transform 0.3s ease;
+            pointer-events: none;
+        }
+        .toast-msg.show { transform: translateX(-50%) translateY(0); }
+
+        /* ── Loading Spinner ── */
+        .loading-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.7); z-index: 550;
+            display: none; align-items: center; justify-content: center;
+        }
+        .loading-overlay.show { display: flex; }
+        .spinner {
+            width: 36px; height: 36px; border: 3px solid #e1e4e8; border-top-color: #1a1a2e;
+            border-radius: 50%; animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Responsive ── */
+        @media (max-width: 640px) {
+            .top-bar { padding: 0 16px; }
+            .page-body { padding: 0 12px; }
+            .persona-header { padding: 18px 18px; flex-direction: column; }
+            .persona-actions { margin-left: 0; margin-top: 12px; }
+            .persona-section { padding: 14px 18px; }
+            .persona-grid { grid-template-columns: 1fr; }
+            .persona-grid-cell { border-right: none !important; }
+            .persona-grid-cell:nth-child(2) { border-top: 1px solid #f0f0f0; }
+            .persona-grid-cell { padding: 14px 18px; }
+            .form-row { grid-template-columns: 1fr; }
+            .modal { width: 100%; max-width: 100%; border-radius: 0; max-height: 100vh; }
+            .tb-left .agency { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ── Top Bar ── -->
+<div class="top-bar">
+    <div class="tb-left">
+        <h1>Audience Personas</h1>
+        <div class="separator"></div>
+        <span class="agency">{{ agency_name }}</span>
+    </div>
+    <div class="tb-actions">
+        <a href="/a/{{ slug }}/dashboard/{{ onboarding_id }}/tools" class="btn">Back</a>
+        <button class="btn btn-green" onclick="aiGenerate()">
+            <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1.5a.75.75 0 0 1 .75.75v4h4a.75.75 0 0 1 0 1.5h-4v4a.75.75 0 0 1-1.5 0v-4h-4a.75.75 0 0 1 0-1.5h4v-4A.75.75 0 0 1 8 1.5z"/></svg>
+            AI Generate
+        </button>
+        <button class="btn btn-primary" onclick="openModal()">+ New Persona</button>
+    </div>
+</div>
+
+<!-- ── Page Body ── -->
+<div class="page-body" id="page-body">
+
+    {% if personas and personas|length > 0 %}
+    <div id="personas-list">
+        {% for p in personas %}
+        <div class="persona-card" id="persona-{{ p.id }}">
+            <div class="persona-header" style="border-left-color: {{ p.color or '#6366f1' }};">
+                <div class="persona-header-info">
+                    <div class="persona-name">{{ p.name }}</div>
+                    <div class="persona-meta">
+                        {% if p.job_title %}<span>{{ p.job_title }}</span>{% endif %}
+                        {% if p.age_range %}<span>{{ p.age_range }}</span>{% endif %}
+                        {% if p.location %}<span>{{ p.location }}</span>{% endif %}
+                        {% if p.income %}<span>{{ p.income }}</span>{% endif %}
+                    </div>
+                </div>
+                <div class="persona-actions">
+                    <button class="btn-sm" onclick="openModal('{{ p.id }}')">Edit</button>
+                    <button class="btn-sm btn-sm-del" onclick="deletePersona('{{ p.id }}')">Delete</button>
+                </div>
+            </div>
+
+            {% if p.bio %}
+            <div class="persona-section">
+                <div class="section-label">Bio</div>
+                <div class="section-value">{{ p.bio }}</div>
+            </div>
+            {% endif %}
+
+            <div class="persona-grid">
+                <div class="persona-grid-cell">
+                    <div class="section-label">Goals</div>
+                    <div class="section-value">{{ p.goals or '---' }}</div>
+                </div>
+                <div class="persona-grid-cell">
+                    <div class="section-label">Pain Points</div>
+                    <div class="section-value">{{ p.pain_points or '---' }}</div>
+                </div>
+            </div>
+            <div class="persona-grid">
+                <div class="persona-grid-cell">
+                    <div class="section-label">Preferred Channels</div>
+                    <div class="section-value">{{ p.channels or '---' }}</div>
+                </div>
+                <div class="persona-grid-cell">
+                    <div class="section-label">Brands They Follow</div>
+                    <div class="section-value">{{ p.brands or '---' }}</div>
+                </div>
+            </div>
+            <div class="persona-grid">
+                <div class="persona-grid-cell">
+                    <div class="section-label">Buying Behavior</div>
+                    <div class="section-value">{{ p.buying_behavior or '---' }}</div>
+                </div>
+                <div class="persona-grid-cell">
+                    <div class="section-label">Messaging Angle</div>
+                    <div class="section-value">{{ p.messaging_angle or '---' }}</div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state" id="empty-state">
+        <div class="empty-state-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+        </div>
+        <h3>No personas yet</h3>
+        <p>Click "AI Generate" to create personas automatically, or add one manually.</p>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- ── Modal ── -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
+        <div class="modal-head">
+            <h2 id="modal-title">New Persona</h2>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="form-id" value="">
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Name</label>
+                    <input class="form-input" id="form-name" placeholder="e.g. Busy Professional Beth">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Job Title</label>
+                    <input class="form-input" id="form-job_title" placeholder="e.g. Marketing Manager">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Age Range</label>
+                    <input class="form-input" id="form-age_range" placeholder="e.g. 28-35">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Location</label>
+                    <input class="form-input" id="form-location" placeholder="e.g. Urban, US">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Income</label>
+                <input class="form-input" id="form-income" placeholder="e.g. $75,000 - $100,000">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Bio</label>
+                <textarea class="form-textarea" id="form-bio" placeholder="A brief description of this persona..."></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Goals</label>
+                    <textarea class="form-textarea" id="form-goals" placeholder="What does this persona want to achieve?"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Pain Points</label>
+                    <textarea class="form-textarea" id="form-pain_points" placeholder="What frustrations or obstacles do they face?"></textarea>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Preferred Channels</label>
+                    <textarea class="form-textarea" id="form-channels" placeholder="e.g. Instagram, Email, YouTube"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Brands They Follow</label>
+                    <textarea class="form-textarea" id="form-brands" placeholder="e.g. Nike, Apple, Glossier"></textarea>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Buying Behavior</label>
+                    <textarea class="form-textarea" id="form-buying_behavior" placeholder="How do they make purchasing decisions?"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Messaging Angle</label>
+                    <textarea class="form-textarea" id="form-messaging_angle" placeholder="What messaging resonates with them?"></textarea>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Color</label>
+                <div class="color-picker" id="color-picker">
+                    <div class="color-swatch selected" data-color="#6366f1" style="background:#6366f1;" onclick="pickColor(this)"></div>
+                    <div class="color-swatch" data-color="#0ea5e9" style="background:#0ea5e9;" onclick="pickColor(this)"></div>
+                    <div class="color-swatch" data-color="#10b981" style="background:#10b981;" onclick="pickColor(this)"></div>
+                    <div class="color-swatch" data-color="#f59e0b" style="background:#f59e0b;" onclick="pickColor(this)"></div>
+                    <div class="color-swatch" data-color="#ef4444" style="background:#ef4444;" onclick="pickColor(this)"></div>
+                    <div class="color-swatch" data-color="#8b5cf6" style="background:#8b5cf6;" onclick="pickColor(this)"></div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-foot">
+            <button class="btn" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" id="modal-save-btn" onclick="savePersona()">Save Persona</button>
+        </div>
+    </div>
+</div>
+
+<!-- ── Toast ── -->
+<div class="toast-msg" id="toast-msg"></div>
+
+<!-- ── Loading Overlay ── -->
+<div class="loading-overlay" id="loading-overlay">
+    <div class="spinner"></div>
+</div>
+
+<script>
+const BASE = '/a/{{ slug }}/dashboard/{{ onboarding_id }}/personas';
+const AI_URL = BASE + '/ai-generate';
+
+const FIELDS = ['name','job_title','age_range','location','income','bio','goals','pain_points','channels','brands','buying_behavior','messaging_angle'];
+
+/* ── Toast ── */
+function showToast(msg) {
+    const el = document.getElementById('toast-msg');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+/* ── Color Picker ── */
+function pickColor(el) {
+    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+    el.classList.add('selected');
+}
+
+function getSelectedColor() {
+    const sel = document.querySelector('.color-swatch.selected');
+    return sel ? sel.dataset.color : '#6366f1';
+}
+
+function setSelectedColor(color) {
+    document.querySelectorAll('.color-swatch').forEach(s => {
+        s.classList.toggle('selected', s.dataset.color === color);
+    });
+    // If no match found, select first
+    if (!document.querySelector('.color-swatch.selected')) {
+        document.querySelector('.color-swatch').classList.add('selected');
+    }
+}
+
+/* ── Modal ── */
+function openModal(id) {
+    const overlay = document.getElementById('modal-overlay');
+    const title = document.getElementById('modal-title');
+    const saveBtn = document.getElementById('modal-save-btn');
+
+    // Reset form
+    FIELDS.forEach(f => {
+        const el = document.getElementById('form-' + f);
+        if (el) el.value = '';
+    });
+    document.getElementById('form-id').value = '';
+    setSelectedColor('#6366f1');
+
+    if (id) {
+        // Edit mode: populate from existing card data
+        title.textContent = 'Edit Persona';
+        saveBtn.textContent = 'Update Persona';
+        document.getElementById('form-id').value = id;
+
+        // Fetch current data
+        fetch(BASE + '/' + id, {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            FIELDS.forEach(f => {
+                const el = document.getElementById('form-' + f);
+                if (el && data[f]) el.value = data[f];
+            });
+            if (data.color) setSelectedColor(data.color);
+        })
+        .catch(() => showToast('Failed to load persona data.'));
+    } else {
+        title.textContent = 'New Persona';
+        saveBtn.textContent = 'Save Persona';
+    }
+
+    overlay.classList.add('open');
+}
+
+function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+}
+
+/* ── Save / Update ── */
+function savePersona() {
+    const id = document.getElementById('form-id').value;
+    const payload = {};
+    FIELDS.forEach(f => {
+        const el = document.getElementById('form-' + f);
+        if (el) payload[f] = el.value.trim();
+    });
+    payload.color = getSelectedColor();
+
+    if (!payload.name) {
+        showToast('Name is required.');
+        return;
+    }
+
+    const saveBtn = document.getElementById('modal-save-btn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving...';
+
+    const url = id ? (BASE + '/' + id) : BASE;
+    const method = id ? 'PUT' : 'POST';
+
+    fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(r => r.json())
+    .then(data => {
+        saveBtn.disabled = false;
+        saveBtn.textContent = id ? 'Update Persona' : 'Save Persona';
+
+        if (data.error) {
+            showToast(data.error);
+            return;
+        }
+
+        closeModal();
+        showToast(id ? 'Persona updated.' : 'Persona created.');
+
+        if (id) {
+            // Update existing card in place
+            updateCardInDOM(data);
+        } else {
+            // Remove empty state if present
+            removeEmptyState();
+            // Insert new card
+            insertCardInDOM(data);
+        }
+    })
+    .catch(() => {
+        saveBtn.disabled = false;
+        saveBtn.textContent = id ? 'Update Persona' : 'Save Persona';
+        showToast('Failed to save persona.');
+    });
+}
+
+/* ── Delete ── */
+function deletePersona(id) {
+    if (!confirm('Delete this persona? This cannot be undone.')) return;
+
+    fetch(BASE + '/' + id, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) {
+            showToast(data.error);
+            return;
+        }
+        const el = document.getElementById('persona-' + id);
+        if (el) el.remove();
+        showToast('Persona deleted.');
+
+        // Check if list is empty
+        const list = document.getElementById('personas-list');
+        if (list && list.children.length === 0) {
+            list.remove();
+            showEmptyState();
+        }
+    })
+    .catch(() => showToast('Failed to delete persona.'));
+}
+
+/* ── AI Generate ── */
+function aiGenerate() {
+    const loading = document.getElementById('loading-overlay');
+    loading.classList.add('show');
+
+    fetch(AI_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        loading.classList.remove('show');
+
+        if (data.error) {
+            showToast(data.error);
+            return;
+        }
+
+        const personas = Array.isArray(data) ? data : (data.personas || []);
+        if (personas.length === 0) {
+            showToast('No personas were generated.');
+            return;
+        }
+
+        removeEmptyState();
+        personas.forEach(p => insertCardInDOM(p));
+        showToast(personas.length + ' persona' + (personas.length !== 1 ? 's' : '') + ' generated.');
+    })
+    .catch(() => {
+        loading.classList.remove('show');
+        showToast('Failed to generate personas. Please try again.');
+    });
+}
+
+/* ── DOM Helpers ── */
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function removeEmptyState() {
+    const empty = document.getElementById('empty-state');
+    if (empty) empty.remove();
+}
+
+function showEmptyState() {
+    const body = document.getElementById('page-body');
+    const div = document.createElement('div');
+    div.className = 'empty-state';
+    div.id = 'empty-state';
+    div.innerHTML = '<div class="empty-state-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><h3>No personas yet</h3><p>Click "AI Generate" to create personas automatically, or add one manually.</p>';
+    body.appendChild(div);
+}
+
+function ensureList() {
+    let list = document.getElementById('personas-list');
+    if (!list) {
+        list = document.createElement('div');
+        list.id = 'personas-list';
+        document.getElementById('page-body').appendChild(list);
+    }
+    return list;
+}
+
+function buildCardHTML(p) {
+    const color = escapeHtml(p.color || '#6366f1');
+    const id = escapeHtml(p.id);
+
+    let metaParts = '';
+    if (p.job_title) metaParts += '<span>' + escapeHtml(p.job_title) + '</span>';
+    if (p.age_range) metaParts += '<span>' + escapeHtml(p.age_range) + '</span>';
+    if (p.location) metaParts += '<span>' + escapeHtml(p.location) + '</span>';
+    if (p.income) metaParts += '<span>' + escapeHtml(p.income) + '</span>';
+
+    let html = '';
+    html += '<div class="persona-header" style="border-left-color:' + color + ';">';
+    html += '  <div class="persona-header-info">';
+    html += '    <div class="persona-name">' + escapeHtml(p.name) + '</div>';
+    html += '    <div class="persona-meta">' + metaParts + '</div>';
+    html += '  </div>';
+    html += '  <div class="persona-actions">';
+    html += '    <button class="btn-sm" onclick="openModal(\'' + id + '\')">Edit</button>';
+    html += '    <button class="btn-sm btn-sm-del" onclick="deletePersona(\'' + id + '\')">Delete</button>';
+    html += '  </div>';
+    html += '</div>';
+
+    if (p.bio) {
+        html += '<div class="persona-section">';
+        html += '  <div class="section-label">Bio</div>';
+        html += '  <div class="section-value">' + escapeHtml(p.bio) + '</div>';
+        html += '</div>';
+    }
+
+    html += '<div class="persona-grid">';
+    html += '  <div class="persona-grid-cell"><div class="section-label">Goals</div><div class="section-value">' + escapeHtml(p.goals || '---') + '</div></div>';
+    html += '  <div class="persona-grid-cell"><div class="section-label">Pain Points</div><div class="section-value">' + escapeHtml(p.pain_points || '---') + '</div></div>';
+    html += '</div>';
+    html += '<div class="persona-grid">';
+    html += '  <div class="persona-grid-cell"><div class="section-label">Preferred Channels</div><div class="section-value">' + escapeHtml(p.channels || '---') + '</div></div>';
+    html += '  <div class="persona-grid-cell"><div class="section-label">Brands They Follow</div><div class="section-value">' + escapeHtml(p.brands || '---') + '</div></div>';
+    html += '</div>';
+    html += '<div class="persona-grid">';
+    html += '  <div class="persona-grid-cell"><div class="section-label">Buying Behavior</div><div class="section-value">' + escapeHtml(p.buying_behavior || '---') + '</div></div>';
+    html += '  <div class="persona-grid-cell"><div class="section-label">Messaging Angle</div><div class="section-value">' + escapeHtml(p.messaging_angle || '---') + '</div></div>';
+    html += '</div>';
+
+    return html;
+}
+
+function insertCardInDOM(p) {
+    const list = ensureList();
+    const card = document.createElement('div');
+    card.className = 'persona-card';
+    card.id = 'persona-' + p.id;
+    card.innerHTML = buildCardHTML(p);
+    list.appendChild(card);
+}
+
+function updateCardInDOM(p) {
+    const card = document.getElementById('persona-' + p.id);
+    if (card) {
+        card.innerHTML = buildCardHTML(p);
+    }
+}
+
+/* ── Keyboard shortcut: Escape to close modal ── */
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeModal();
+});
+</script>
+</body>
+</html>

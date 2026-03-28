@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Competitor Analysis - {{ agency_name }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f5f7; color: #333; min-height: 100vh; }
+
+        /* ── Top Bar ── */
+        .top-bar {
+            background: #fff; padding: 0 32px; height: 56px; border-bottom: 1px solid #e1e4e8;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .tb-left { display: flex; align-items: center; gap: 12px; }
+        .tb-left h1 { font-size: 16px; font-weight: 700; color: #1a1a2e; letter-spacing: -0.3px; }
+        .tb-left .separator { width: 1px; height: 20px; background: #e1e4e8; }
+        .tb-left .agency { font-size: 13px; color: #8b949e; }
+        .tb-actions { display: flex; gap: 8px; align-items: center; }
+        .btn {
+            padding: 7px 14px; border-radius: 6px; font-size: 13px; font-weight: 500;
+            border: 1px solid #d0d7de; background: #fff; color: #24292f; cursor: pointer;
+            font-family: inherit; transition: all 0.12s; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn:hover { background: #f6f8fa; border-color: #bbb; }
+        .btn-primary { background: #1a1a2e; color: #fff; border-color: #1a1a2e; }
+        .btn-primary:hover { background: #2d2d4e; }
+        .btn-green { background: #2da44e; color: #fff; border-color: #2da44e; }
+        .btn-green:hover { background: #218838; }
+        .btn-danger { color: #cf222e; border-color: #ffcecb; }
+        .btn-danger:hover { background: #ffebe9; border-color: #cf222e; }
+        .btn-sm { padding: 5px 10px; font-size: 12px; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn svg { width: 14px; height: 14px; }
+
+        /* ── Grid ── */
+        .grid-wrapper { padding: 24px 32px 32px; }
+        .grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+        }
+
+        /* ── Card ── */
+        .card {
+            background: #fff; border: 1px solid #d0d7de; border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04); overflow: hidden;
+            transition: box-shadow 0.15s;
+        }
+        .card:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.08); }
+        .card-header {
+            padding: 16px 20px; border-bottom: 1px solid #eaeef2;
+            display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+        }
+        .card-header-left { flex: 1; min-width: 0; }
+        .card-name { font-size: 16px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+        .card-website {
+            font-size: 12px; color: #0969da; text-decoration: none; word-break: break-all;
+        }
+        .card-website:hover { text-decoration: underline; }
+        .card-header-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+        .threat-badge {
+            padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.3px;
+        }
+        .threat-high { background: #ffebe9; color: #cf222e; }
+        .threat-medium { background: #fff8c5; color: #9a6700; }
+        .threat-low { background: #dafbe1; color: #1a7f37; }
+
+        .card-body { padding: 16px 20px; }
+        .card-section { margin-bottom: 14px; }
+        .card-section:last-child { margin-bottom: 0; }
+        .card-section-label {
+            font-size: 11px; font-weight: 600; color: #8b949e; text-transform: uppercase;
+            letter-spacing: 0.4px; margin-bottom: 4px;
+        }
+        .card-section-text { font-size: 13px; color: #24292f; line-height: 1.5; white-space: pre-line; }
+        .card-section-text:empty::after { content: '--'; color: #c9d1d9; }
+
+        .card-channels { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+        .channel-tag {
+            padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500;
+            background: #f6f8fa; border: 1px solid #e1e4e8; color: #57606a;
+        }
+
+        .card-footer {
+            padding: 12px 20px; border-top: 1px solid #eaeef2;
+            display: flex; justify-content: flex-end; gap: 8px;
+        }
+
+        /* ── Empty State ── */
+        .empty-state {
+            text-align: center; padding: 80px 20px;
+        }
+        .empty-icon {
+            width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 50%;
+            background: #f6f8fa; border: 2px solid #e1e4e8;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .empty-icon svg { width: 28px; height: 28px; color: #8b949e; }
+        .empty-state h3 { font-size: 18px; font-weight: 600; color: #24292f; margin-bottom: 6px; }
+        .empty-state p { font-size: 14px; color: #57606a; margin-bottom: 20px; }
+
+        /* ── Summary Bar ── */
+        .summary-bar {
+            background: #fff; border-bottom: 1px solid #e1e4e8;
+            padding: 10px 32px; display: flex; gap: 20px; align-items: center;
+        }
+        .summary-stat { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #57606a; }
+        .summary-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+        /* ── Modal ── */
+        .modal-bg {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 300;
+            display: none; align-items: flex-start; justify-content: center; padding-top: 50px;
+            backdrop-filter: blur(2px);
+        }
+        .modal-bg.open { display: flex; }
+        .modal {
+            background: #fff; border-radius: 12px; width: 600px; max-width: 95vw;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.2); overflow: hidden;
+            max-height: 88vh; overflow-y: auto;
+        }
+        .m-head {
+            padding: 18px 24px; border-bottom: 1px solid #e1e4e8;
+            display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; background: #fff; z-index: 1;
+        }
+        .m-head h3 { font-size: 16px; font-weight: 600; color: #24292f; }
+        .m-head .x-btn { background: none; border: none; font-size: 20px; color: #8b949e; cursor: pointer; padding: 4px; border-radius: 4px; }
+        .m-head .x-btn:hover { background: #f6f8fa; color: #24292f; }
+        .m-body { padding: 20px 24px; }
+        .fg { margin-bottom: 16px; }
+        .fg label { display: block; font-size: 12px; font-weight: 600; color: #57606a; margin-bottom: 5px; }
+        .fg input, .fg select, .fg textarea {
+            width: 100%; padding: 8px 12px; border: 1px solid #d0d7de; border-radius: 6px;
+            font-size: 14px; font-family: inherit; outline: none; background: #fff;
+            transition: border 0.12s;
+        }
+        .fg input:focus, .fg select:focus, .fg textarea:focus { border-color: #0969da; box-shadow: 0 0 0 3px rgba(9,105,218,0.1); }
+        .fg textarea { resize: vertical; min-height: 72px; }
+        .fg-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .fg-hint { font-size: 11px; color: #8b949e; margin-top: 4px; }
+
+        .m-section { font-size: 11px; font-weight: 600; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; margin: 20px 0 12px; padding-top: 16px; border-top: 1px solid #eaeef2; }
+        .m-section:first-of-type { margin-top: 4px; border-top: none; padding-top: 0; }
+
+        .m-foot {
+            padding: 14px 24px; border-top: 1px solid #e1e4e8;
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; bottom: 0; background: #fff;
+        }
+
+        /* Threat level selector */
+        .threat-row { display: flex; gap: 8px; }
+        .tl-pill {
+            padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 600;
+            cursor: pointer; transition: all 0.12s; border: 2px solid transparent;
+        }
+        .tl-high { background: #ffebe9; color: #cf222e; }
+        .tl-high.on { border-color: #cf222e; }
+        .tl-medium { background: #fff8c5; color: #9a6700; }
+        .tl-medium.on { border-color: #9a6700; }
+        .tl-low { background: #dafbe1; color: #1a7f37; }
+        .tl-low.on { border-color: #1a7f37; }
+
+        /* ── Toast ── */
+        .toast {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+            background: #24292f; color: #fff; padding: 10px 20px; border-radius: 8px;
+            font-size: 13px; font-weight: 500; z-index: 500; display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .toast.show { display: block; }
+
+        /* ── Loading Overlay ── */
+        .loading-overlay {
+            position: fixed; inset: 0; background: rgba(255,255,255,0.7); z-index: 400;
+            display: none; align-items: center; justify-content: center;
+            backdrop-filter: blur(1px);
+        }
+        .loading-overlay.show { display: flex; }
+        .loading-spinner {
+            text-align: center;
+        }
+        .loading-spinner .spinner {
+            width: 36px; height: 36px; border: 3px solid #e1e4e8; border-top-color: #1a1a2e;
+            border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px;
+        }
+        .loading-spinner p { font-size: 14px; color: #57606a; font-weight: 500; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 900px) {
+            .grid { grid-template-columns: 1fr; }
+            .top-bar, .summary-bar, .grid-wrapper { padding-left: 16px; padding-right: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="top-bar">
+    <div class="tb-left">
+        <h1>Competitor Analysis</h1>
+        <div class="separator"></div>
+        <span class="agency">{{ agency_name }}</span>
+    </div>
+    <div class="tb-actions">
+        <button class="btn btn-green" id="ai-btn" onclick="aiGenerate()">
+            <svg viewBox="0 0 16 16" fill="currentColor"><path d="M7.998 0a8 8 0 1 0 0 16 8 8 0 0 0 0-16ZM1.5 8a6.5 6.5 0 1 1 13 0 6.5 6.5 0 0 1-13 0Z"/><path d="M8 3.5a.75.75 0 0 1 .75.75v3h3a.75.75 0 0 1 0 1.5h-3v3a.75.75 0 0 1-1.5 0v-3h-3a.75.75 0 0 1 0-1.5h3v-3A.75.75 0 0 1 8 3.5Z"/></svg>
+            AI Generate
+        </button>
+        <button class="btn btn-primary" onclick="openModal()">+ Add Competitor</button>
+        <a href="/a/{{ slug }}/dashboard/{{ onboarding_id }}/tools" class="btn">Back</a>
+    </div>
+</div>
+
+<!-- Summary Bar -->
+<div class="summary-bar" id="summary-bar">
+    <div class="summary-stat" style="font-weight:600; color:#24292f;"><span id="stat-total">0</span>&nbsp;Competitors</div>
+    <div class="summary-stat"><div class="summary-dot" style="background:#cf222e;"></div><span id="stat-high">0</span> High Threat</div>
+    <div class="summary-stat"><div class="summary-dot" style="background:#d29922;"></div><span id="stat-medium">0</span> Medium</div>
+    <div class="summary-stat"><div class="summary-dot" style="background:#2da44e;"></div><span id="stat-low">0</span> Low</div>
+</div>
+
+<!-- Competitor Grid -->
+<div class="grid-wrapper">
+    <div class="grid" id="comp-grid"></div>
+    <div class="empty-state" id="empty-state" style="display:none;">
+        <div class="empty-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+        </div>
+        <h3>No competitors yet</h3>
+        <p>Add competitors manually or use AI Generate to discover them automatically.</p>
+        <div style="display:flex; gap:8px; justify-content:center;">
+            <button class="btn btn-green" onclick="aiGenerate()">
+                <svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><path d="M7.998 0a8 8 0 1 0 0 16 8 8 0 0 0 0-16ZM1.5 8a6.5 6.5 0 1 1 13 0 6.5 6.5 0 0 1-13 0Z"/><path d="M8 3.5a.75.75 0 0 1 .75.75v3h3a.75.75 0 0 1 0 1.5h-3v3a.75.75 0 0 1-1.5 0v-3h-3a.75.75 0 0 1 0-1.5h3v-3A.75.75 0 0 1 8 3.5Z"/></svg>
+                AI Generate
+            </button>
+            <button class="btn btn-primary" onclick="openModal()">+ Add Competitor</button>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-bg" id="comp-modal">
+    <div class="modal">
+        <div class="m-head">
+            <h3 id="modal-title">Add Competitor</h3>
+            <button class="x-btn" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="m-body">
+            <div class="m-section">Basic Information</div>
+            <div class="fg-row">
+                <div class="fg">
+                    <label>Competitor Name</label>
+                    <input type="text" id="f-name" placeholder="e.g. Acme Corp">
+                </div>
+                <div class="fg">
+                    <label>Website</label>
+                    <input type="text" id="f-website" placeholder="e.g. https://acme.com">
+                </div>
+            </div>
+            <div class="fg">
+                <label>Threat Level</label>
+                <div class="threat-row" style="margin-top:2px;">
+                    <div class="tl-pill tl-high" data-level="high" onclick="setThreat('high')">High</div>
+                    <div class="tl-pill tl-medium on" data-level="medium" onclick="setThreat('medium')">Medium</div>
+                    <div class="tl-pill tl-low" data-level="low" onclick="setThreat('low')">Low</div>
+                </div>
+            </div>
+
+            <div class="m-section">Analysis</div>
+            <div class="fg">
+                <label>Strengths</label>
+                <textarea id="f-strengths" placeholder="What do they do well? Key advantages..."></textarea>
+            </div>
+            <div class="fg">
+                <label>Weaknesses</label>
+                <textarea id="f-weaknesses" placeholder="Where do they fall short? Gaps in their offering..."></textarea>
+            </div>
+            <div class="fg">
+                <label>Channels</label>
+                <input type="text" id="f-channels" placeholder="e.g. SEO, Instagram, Google Ads (comma-separated)">
+                <div class="fg-hint">Separate multiple channels with commas</div>
+            </div>
+
+            <div class="m-section">Strategy</div>
+            <div class="fg">
+                <label>Positioning</label>
+                <textarea id="f-positioning" placeholder="How do they position themselves in the market?"></textarea>
+            </div>
+            <div class="fg">
+                <label>Notes</label>
+                <textarea id="f-notes" placeholder="Any other observations, recent moves, campaigns..."></textarea>
+            </div>
+        </div>
+        <div class="m-foot">
+            <div>
+                <button class="btn btn-danger" id="del-btn" onclick="deleteCompetitor()" style="display:none;">Delete</button>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button class="btn" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" id="save-btn" onclick="saveCompetitor()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loading">
+    <div class="loading-spinner">
+        <div class="spinner"></div>
+        <p>Generating competitor analysis...</p>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const BASE = '/a/{{ slug }}/dashboard/{{ onboarding_id }}/competitors';
+let competitors = {{ competitors | tojson }};
+let editId = null;
+let selThreat = 'medium';
+
+function toast(m) {
+    const e = document.getElementById('toast');
+    e.textContent = m;
+    e.classList.add('show');
+    setTimeout(() => e.classList.remove('show'), 3000);
+}
+
+function esc(s) {
+    if (!s) return '';
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+}
+
+function render() {
+    const grid = document.getElementById('comp-grid');
+    const empty = document.getElementById('empty-state');
+
+    if (competitors.length === 0) {
+        grid.style.display = 'none';
+        empty.style.display = 'block';
+    } else {
+        grid.style.display = 'grid';
+        empty.style.display = 'none';
+        grid.innerHTML = '';
+        competitors.forEach(c => grid.appendChild(buildCard(c)));
+    }
+
+    // Update stats
+    document.getElementById('stat-total').textContent = competitors.length;
+    document.getElementById('stat-high').textContent = competitors.filter(c => c.threat_level === 'high').length;
+    document.getElementById('stat-medium').textContent = competitors.filter(c => c.threat_level === 'medium').length;
+    document.getElementById('stat-low').textContent = competitors.filter(c => c.threat_level === 'low').length;
+}
+
+function buildCard(c) {
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const threatClass = 'threat-' + (c.threat_level || 'medium');
+    const threatLabel = (c.threat_level || 'medium').charAt(0).toUpperCase() + (c.threat_level || 'medium').slice(1);
+
+    const channelTags = (c.channels || '').split(',')
+        .map(ch => ch.trim())
+        .filter(ch => ch)
+        .map(ch => `<span class="channel-tag">${esc(ch)}</span>`)
+        .join('');
+
+    const websiteDisplay = c.website
+        ? `<a class="card-website" href="${esc(c.website)}" target="_blank" rel="noopener">${esc(c.website)}</a>`
+        : '';
+
+    card.innerHTML = `
+        <div class="card-header">
+            <div class="card-header-left">
+                <div class="card-name">${esc(c.name)}</div>
+                ${websiteDisplay}
+            </div>
+            <div class="card-header-right">
+                <span class="threat-badge ${threatClass}">${threatLabel}</span>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="card-section">
+                <div class="card-section-label">Strengths</div>
+                <div class="card-section-text">${esc(c.strengths)}</div>
+            </div>
+            <div class="card-section">
+                <div class="card-section-label">Weaknesses</div>
+                <div class="card-section-text">${esc(c.weaknesses)}</div>
+            </div>
+            <div class="card-section">
+                <div class="card-section-label">Channels</div>
+                <div class="card-channels">${channelTags || '<span style="font-size:13px;color:#c9d1d9;">--</span>'}</div>
+            </div>
+            <div class="card-section">
+                <div class="card-section-label">Positioning</div>
+                <div class="card-section-text">${esc(c.positioning)}</div>
+            </div>
+            <div class="card-section">
+                <div class="card-section-label">Notes</div>
+                <div class="card-section-text">${esc(c.notes)}</div>
+            </div>
+        </div>
+        <div class="card-footer">
+            <button class="btn btn-sm" onclick="openModal(${JSON.stringify(c.id).replace(/"/g, '&quot;')})">Edit</button>
+            <button class="btn btn-sm btn-danger" onclick="confirmDelete(${JSON.stringify(c.id).replace(/"/g, '&quot;')})">Delete</button>
+        </div>
+    `;
+    return card;
+}
+
+function openModal(id) {
+    editId = id || null;
+    const c = editId ? competitors.find(x => x.id === editId) : null;
+
+    document.getElementById('modal-title').textContent = c ? 'Edit Competitor' : 'Add Competitor';
+    document.getElementById('f-name').value = c ? (c.name || '') : '';
+    document.getElementById('f-website').value = c ? (c.website || '') : '';
+    document.getElementById('f-strengths').value = c ? (c.strengths || '') : '';
+    document.getElementById('f-weaknesses').value = c ? (c.weaknesses || '') : '';
+    document.getElementById('f-channels').value = c ? (c.channels || '') : '';
+    document.getElementById('f-positioning').value = c ? (c.positioning || '') : '';
+    document.getElementById('f-notes').value = c ? (c.notes || '') : '';
+    selThreat = c ? (c.threat_level || 'medium') : 'medium';
+    updateThreatPills();
+
+    document.getElementById('del-btn').style.display = c ? 'inline-flex' : 'none';
+    document.getElementById('save-btn').textContent = c ? 'Update' : 'Save';
+    document.getElementById('comp-modal').classList.add('open');
+}
+
+function closeModal() {
+    document.getElementById('comp-modal').classList.remove('open');
+    editId = null;
+}
+
+function setThreat(level) {
+    selThreat = level;
+    updateThreatPills();
+}
+
+function updateThreatPills() {
+    document.querySelectorAll('.tl-pill').forEach(p => {
+        p.classList.toggle('on', p.dataset.level === selThreat);
+    });
+}
+
+function saveCompetitor() {
+    const data = {
+        name: document.getElementById('f-name').value.trim(),
+        website: document.getElementById('f-website').value.trim(),
+        strengths: document.getElementById('f-strengths').value.trim(),
+        weaknesses: document.getElementById('f-weaknesses').value.trim(),
+        channels: document.getElementById('f-channels').value.trim(),
+        positioning: document.getElementById('f-positioning').value.trim(),
+        notes: document.getElementById('f-notes').value.trim(),
+        threat_level: selThreat
+    };
+
+    if (!data.name) {
+        toast('Competitor name is required.');
+        return;
+    }
+
+    const btn = document.getElementById('save-btn');
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    const url = editId ? `${BASE}/${editId}` : BASE;
+    const method = editId ? 'PUT' : 'POST';
+
+    fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(r => r.json())
+    .then(res => {
+        btn.disabled = false;
+        btn.textContent = editId ? 'Update' : 'Save';
+        if (res.success) {
+            if (editId) {
+                const idx = competitors.findIndex(c => c.id === editId);
+                if (idx >= 0) competitors[idx] = res.competitor;
+            } else {
+                competitors.push(res.competitor);
+            }
+            render();
+            closeModal();
+            toast(editId ? 'Competitor updated.' : 'Competitor added.');
+        } else {
+            toast(res.error || 'Failed to save.');
+        }
+    })
+    .catch(() => {
+        btn.disabled = false;
+        btn.textContent = editId ? 'Update' : 'Save';
+        toast('An error occurred.');
+    });
+}
+
+function confirmDelete(id) {
+    if (!confirm('Delete this competitor?')) return;
+    fetch(`${BASE}/${id}`, { method: 'DELETE' })
+        .then(r => r.json())
+        .then(res => {
+            if (res.success) {
+                competitors = competitors.filter(c => c.id !== id);
+                render();
+                toast('Competitor deleted.');
+            } else {
+                toast(res.error || 'Failed to delete.');
+            }
+        })
+        .catch(() => toast('An error occurred.'));
+}
+
+function deleteCompetitor() {
+    if (!editId) return;
+    confirmDelete(editId);
+    closeModal();
+}
+
+function aiGenerate() {
+    const loading = document.getElementById('loading');
+    const btn = document.getElementById('ai-btn');
+    btn.disabled = true;
+    loading.classList.add('show');
+
+    fetch(`${BASE}/ai-generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+    })
+    .then(r => r.json())
+    .then(res => {
+        btn.disabled = false;
+        loading.classList.remove('show');
+        if (res.success) {
+            const items = res.competitors || [];
+            competitors = competitors.concat(items);
+            render();
+            toast('Added ' + items.length + ' competitor' + (items.length !== 1 ? 's' : '') + '.');
+        } else {
+            toast(res.error || 'AI generation failed.');
+        }
+    })
+    .catch(() => {
+        btn.disabled = false;
+        loading.classList.remove('show');
+        toast('AI generation failed.');
+    });
+}
+
+// Close modal on backdrop click
+document.getElementById('comp-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeModal();
+});
+
+render();
+</script>
+</body>
+</html>

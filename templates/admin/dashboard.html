@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ agency.name }} — Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern-ui.css') }}">
+    <style>
+        body { background: #f8f8fb; }
+
+        /* ── Sidebar ── */
+        .sidebar {
+            position: fixed; top: 0; left: 0; bottom: 0;
+            width: 240px;
+            background: #fff;
+            border-right: 1px solid #eee;
+            display: flex; flex-direction: column;
+            z-index: 50;
+        }
+        .sidebar-brand {
+            padding: 24px 24px 20px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .sidebar-brand .name {
+            font-size: 16px; font-weight: 700; color: #1a1a2e;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .sidebar-brand .name .dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: linear-gradient(135deg, {{ agency.primary_color }}, {{ agency.secondary_color }});
+        }
+        .sidebar-brand .tagline {
+            font-size: 11px; color: #aaa; margin-top: 4px;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        .sidebar-nav { padding: 16px 12px; flex: 1; }
+        .sidebar-nav a {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 14px; border-radius: 8px;
+            font-size: 14px; font-weight: 500; color: #666;
+            text-decoration: none; transition: all 0.15s;
+            margin-bottom: 2px;
+        }
+        .sidebar-nav a:hover { background: #f5f5fa; color: #333; }
+        .sidebar-nav a.active {
+            background: linear-gradient(135deg, {{ agency.primary_color }}12, {{ agency.secondary_color }}12);
+            color: {{ agency.primary_color }};
+            font-weight: 600;
+        }
+        .sidebar-nav a .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+        .nav-badge { background: #dc2626; color: #fff; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 50px; margin-left: auto; }
+
+        .sidebar-footer {
+            padding: 16px 20px; border-top: 1px solid #f0f0f0;
+            font-size: 13px;
+        }
+        .sidebar-footer .user-name { font-weight: 600; color: #333; }
+        .sidebar-footer .user-email { color: #aaa; font-size: 12px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; }
+        .sidebar-footer a { color: #bbb; text-decoration: none; font-size: 12px; margin-top: 8px; display: inline-block; }
+        .sidebar-footer a:hover { color: #666; }
+
+        /* ── Main ── */
+        .main { margin-left: 240px; min-height: 100vh; }
+
+        .topbar {
+            padding: 20px 36px;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid #eee;
+            background: #fff;
+        }
+        .topbar h1 { font-size: 20px; font-weight: 700; color: #1a1a2e; letter-spacing: -0.3px; }
+        .topbar .actions { display: flex; gap: 10px; }
+
+        .content { padding: 28px 36px; }
+
+        /* ── Link banner ── */
+        .link-banner {
+            display: flex; align-items: center; justify-content: space-between;
+            background: #1a1a2e;
+            border-radius: 12px;
+            padding: 20px 28px;
+            margin-bottom: 28px;
+            gap: 16px; flex-wrap: wrap;
+        }
+        .link-banner .info { }
+        .link-banner .info .label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+        .link-banner .link-row {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .link-banner .link-url {
+            font-size: 14px; font-family: 'SF Mono', 'Fira Code', monospace;
+            color: #ddd; background: rgba(255,255,255,0.06);
+            padding: 8px 16px; border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .link-banner .copy-btn {
+            padding: 8px 18px; border: none; border-radius: 6px;
+            background: {{ agency.primary_color }}; color: #fff;
+            font-size: 13px; font-weight: 600; cursor: pointer;
+            transition: all 0.15s;
+        }
+        .link-banner .copy-btn:hover { opacity: 0.85; }
+
+        /* ── Stats ── */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+            margin-bottom: 28px;
+        }
+        .s-card {
+            background: #fff; border-radius: 10px; padding: 22px 24px;
+            border: 1px solid #eee;
+        }
+        .s-card .s-label { font-size: 12px; color: #999; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+        .s-card .s-value { font-size: 28px; font-weight: 800; color: #1a1a2e; }
+
+        /* ── Table ── */
+        .table-wrap {
+            background: #fff; border-radius: 10px; border: 1px solid #eee; overflow: hidden;
+        }
+        .table-header {
+            padding: 16px 24px; display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .table-header h2 { font-size: 15px; font-weight: 600; color: #1a1a2e; }
+        .table-header .count { font-size: 12px; color: #aaa; background: #f5f5f5; padding: 3px 10px; border-radius: 50px; }
+
+        table { width: 100%; border-collapse: collapse; }
+        table th {
+            padding: 10px 24px; text-align: left; font-size: 11px;
+            color: #aaa; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+            background: #fafafa; border-bottom: 1px solid #f0f0f0;
+        }
+        table td {
+            padding: 14px 24px; font-size: 14px; border-bottom: 1px solid #f5f5f5; color: #444;
+        }
+        table tr:last-child td { border-bottom: none; }
+        table tr:hover td { background: #fafbff; }
+        table .company { font-weight: 600; color: #1a1a2e; }
+        table .view-link {
+            color: {{ agency.primary_color }}; text-decoration: none;
+            font-weight: 500; font-size: 13px;
+        }
+        table .view-link:hover { text-decoration: underline; }
+
+        .badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 4px 10px; border-radius: 50px; font-size: 12px; font-weight: 600;
+        }
+        .badge-completed { background: #ecfdf5; color: #059669; }
+        .badge-processing { background: #fffbeb; color: #d97706; }
+        .badge-failed { background: #fef2f2; color: #dc2626; }
+
+        .badge-dot { width: 6px; height: 6px; border-radius: 50%; }
+        .badge-completed .badge-dot { background: #059669; }
+        .badge-processing .badge-dot { background: #d97706; animation: pulse 2s infinite; }
+        .badge-failed .badge-dot { background: #dc2626; }
+
+        /* ── Empty state ── */
+        .empty {
+            text-align: center; padding: 64px 20px;
+        }
+        .empty .empty-icon {
+            width: 56px; height: 56px; border-radius: 12px;
+            background: #f5f5fa; display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 16px; font-size: 24px;
+        }
+        .empty h3 { font-size: 16px; font-weight: 600; color: #1a1a2e; margin-bottom: 6px; }
+        .empty p { font-size: 14px; color: #999; max-width: 300px; margin: 0 auto; }
+
+        /* ── Responsive ── */
+        @media (max-width: 800px) {
+            .sidebar { display: none; }
+            .main { margin-left: 0; }
+            .stats-row { grid-template-columns: 1fr; }
+            .topbar, .content { padding-left: 20px; padding-right: 20px; }
+            .link-banner { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+    <div class="sidebar-brand">
+        <div class="name"><span class="dot"></span> {{ agency.name }}</div>
+        <div class="tagline">Agency Dashboard</div>
+    </div>
+    <nav class="sidebar-nav">
+        <a href="{{ url_for('admin_dashboard') }}" class="active">
+            <span class="nav-icon">◉</span> Clients
+        </a>
+        <a href="{{ url_for('admin_meetings') }}">
+            <span class="nav-icon">☷</span> Meetings
+            {% if pending_meetings %}<span class="nav-badge">{{ pending_meetings }}</span>{% endif %}
+        </a>
+        <a href="{{ url_for('admin_mail') }}">
+            <span class="nav-icon">✉</span> Mail
+        </a>
+        <a href="{{ url_for('admin_onboarding_setup') }}">
+            <span class="nav-icon">&#9889;</span> Onboarding Setup
+        </a>
+        <a href="{{ url_for('admin_settings') }}">
+            <span class="nav-icon">⚙</span> Settings
+        </a>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="user-name">{{ owner.name }}</div>
+        <div class="user-email">{{ owner.email }}</div>
+        <a href="{{ url_for('logout') }}">Sign out</a>
+    </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+    <div class="topbar">
+        <h1>Clients</h1>
+    </div>
+
+    <div class="content">
+        <!-- Onboarding link -->
+        <div class="link-banner">
+            <div class="info">
+                <div class="label">Your onboarding link</div>
+                <div class="link-row">
+                    <span class="link-url" id="onboard-link">{{ request.host_url }}a/{{ agency.slug }}</span>
+                    <button class="copy-btn" onclick="copyLink(this)">Copy</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-row">
+            <div class="s-card">
+                <div class="s-label">Total clients</div>
+                <div class="s-value">{{ onboardings|length }}</div>
+            </div>
+            <div class="s-card">
+                <div class="s-label">Completed</div>
+                <div class="s-value">{{ onboardings|selectattr('status', 'equalto', 'completed')|list|length }}</div>
+            </div>
+            <div class="s-card">
+                <div class="s-label">Processing</div>
+                <div class="s-value">{{ onboardings|selectattr('status', 'equalto', 'processing')|list|length }}</div>
+            </div>
+        </div>
+
+        <!-- Client table -->
+        <div class="table-wrap">
+            <div class="table-header">
+                <h2>All clients</h2>
+                <span class="count">{{ onboardings|length }}</span>
+            </div>
+
+            {% if onboardings %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Company</th>
+                        <th>Contact</th>
+                        <th>Service</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ob in onboardings %}
+                    <tr>
+                        <td class="company">{{ ob.data.full_name }}</td>
+                        <td>{{ ob.data.email }}</td>
+                        <td>{{ ob.data.role|replace('_', ' ')|title }}</td>
+                        <td>
+                            <span class="badge badge-{{ ob.status }}">
+                                <span class="badge-dot"></span>
+                                {{ ob.status|title }}
+                            </span>
+                        </td>
+                        <td style="color:#aaa;">{{ ob.created_at[:10] }}</td>
+                        <td><a href="{{ url_for('admin_client_detail', onboarding_id=ob.onboarding_id) }}" class="view-link">View →</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty">
+                <div class="empty-icon">📋</div>
+                <h3>No clients yet</h3>
+                <p>Share your onboarding link to get your first client started.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function copyLink(btn) {
+    const link = document.getElementById('onboard-link').textContent;
+    navigator.clipboard.writeText(link).then(() => {
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = 'Copy', 2000);
+    });
+}
+</script>
+</body>
+</html>

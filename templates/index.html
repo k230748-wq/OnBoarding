@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Onboarding - {{ agency_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern-ui.css') }}">
+    {% if agency %}
+    <style>
+        .btn-primary, .btn-continue, .wl-start { background: {{ agency.primary_color }}; }
+        .btn-primary:hover, .btn-continue:hover, .wl-start:hover { background: {{ agency.secondary_color }}; }
+        .modern-input:focus { border-color: {{ agency.primary_color }}; box-shadow: 0 0 0 3px {{ agency.primary_color }}22; }
+        .progress-bar { background: {{ agency.primary_color }}; }
+        .wl-badge { color: {{ agency.primary_color }}; background: {{ agency.primary_color }}12; }
+        .tool-chip.selected { background: {{ agency.primary_color }}; color: #fff; }
+    </style>
+    {% endif %}
+</head>
+<body>
+<script>
+    const AGENCY_SLUG = {{ (agency.slug if agency else '')|tojson }};
+    const FORM_SECTIONS = {{ form_sections|tojson }};
+    const TOTAL_STEPS = FORM_SECTIONS.length + 1;
+</script>
+
+<!-- Header -->
+<div class="modern-header">
+    <div class="logo">{% if agency and agency.logo_url %}<img src="{{ agency.logo_url }}" alt="{{ agency_name }}" style="height:28px;vertical-align:middle;margin-right:8px;">{% endif %}{{ agency_name }}</div>
+    <div class="step-indicator" id="step-indicator" style="display:none;"></div>
+</div>
+<div class="progress-bar-container">
+    <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay hidden" id="loading-overlay">
+    <div class="spinner"></div>
+    <p>Setting up your onboarding...</p>
+</div>
+
+<div class="main-content">
+
+    <!-- Step 1: Welcome -->
+    <div class="step-screen active" id="step-1">
+        <div class="welcome-landing">
+            <div class="wl-badge">Client Onboarding</div>
+            <h1 class="wl-title">{{ agency_name }}</h1>
+            <p class="wl-sub">Tell us about your business so we can build a strategy tailored to you.</p>
+            <div class="wl-actions">
+                <button class="wl-start" onclick="nextStep()">Get started</button>
+                <button class="wl-demo" onclick="submitDemo()">Try with sample data</button>
+            </div>
+            <div class="wl-meta">
+                <span>{{ form_sections|length }} sections</span>
+                <span class="wl-dot"></span>
+                <span>~10 min</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dynamic Steps -->
+    {% for section in form_sections %}
+    <div class="step-screen" id="step-{{ loop.index + 1 }}">
+        <div class="info-card">
+            <h2>{{ section.title }}</h2>
+            <p class="subtitle">{{ section.description }}</p>
+
+            {% for q in section.questions %}
+            <div class="form-group">
+                <label>{{ q.label }}{% if q.is_required %} <span class="required">*</span>{% endif %}</label>
+
+                {% if q.field_type == 'textarea' %}
+                <textarea class="modern-input" data-field="{{ q.field_key }}" placeholder="{{ q.placeholder or '' }}"></textarea>
+
+                {% elif q.field_type == 'select' %}
+                <select class="modern-input" data-field="{{ q.field_key }}">
+                    <option value="">{{ q.placeholder or 'Select...' }}</option>
+                    {% for opt in q.options %}
+                    <option value="{{ opt }}">{{ opt }}</option>
+                    {% endfor %}
+                </select>
+
+                {% elif q.field_type == 'multiselect' %}
+                <div class="chip-group" data-field="{{ q.field_key }}" data-type="multiselect">
+                    {% for opt in q.options %}
+                    <div class="tool-chip" onclick="toggleChip(this, '{{ q.field_key }}', '{{ opt }}')">{{ opt }}</div>
+                    {% endfor %}
+                </div>
+
+                {% elif q.field_type == 'checkbox' %}
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400;">
+                    <input type="checkbox" data-field="{{ q.field_key }}"> {{ q.placeholder or q.label }}
+                </label>
+
+                {% else %}
+                <input type="{{ q.field_type }}" class="modern-input" data-field="{{ q.field_key }}" placeholder="{{ q.placeholder or '' }}">
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            <div class="btn-group">
+                <button class="btn-back-modern" onclick="prevStep()">&larr; Back</button>
+                {% if loop.last %}
+                <button class="btn-continue" onclick="submitForm()">Submit</button>
+                {% else %}
+                <button class="btn-continue" onclick="nextStep()">Continue &rarr;</button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Success Step -->
+    <div class="step-screen" id="step-{{ form_sections|length + 2 }}">
+        <div class="success-screen">
+            <div class="success-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <h1>You're all set</h1>
+            <p>Your onboarding has been submitted. Our team is now preparing everything for you.</p>
+            <div class="onboarding-id-display" id="onboarding-id-display">ONB-...</div>
+            <div id="credentials-box" style="display:none; background:#f8f8fb; border:1px solid #eee; border-radius:10px; padding:20px; margin:16px auto 24px; max-width:340px; text-align:left;">
+                <div style="font-size:13px; font-weight:600; color:#1a1a2e; margin-bottom:12px; text-align:center;">Your Dashboard Login</div>
+                <div style="display:flex; justify-content:space-between; padding:6px 0; font-size:14px;">
+                    <span style="color:#999;">Email</span>
+                    <span style="font-weight:500; color:#333;" id="cred-email"></span>
+                </div>
+                <div style="display:flex; justify-content:space-between; padding:6px 0; font-size:14px;">
+                    <span style="color:#999;">Password</span>
+                    <span style="font-weight:600; color:#1a1a2e; font-family:'SF Mono',monospace;" id="cred-password"></span>
+                </div>
+                <p style="font-size:12px; color:#bbb; margin-top:10px; text-align:center;">Save these credentials to access your dashboard anytime.</p>
+            </div>
+            <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+                <a class="btn-continue" id="dashboard-link" href="#">View Dashboard</a>
+                <a class="btn-back-modern" href="/">Start New Onboarding</a>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/confetti.js') }}"></script>
+<script src="{{ url_for('static', filename='js/modern-app.js') }}"></script>
+</body>
+</html>

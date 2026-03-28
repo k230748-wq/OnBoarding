@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ agency.name }} — Settings</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern-ui.css') }}">
+    <style>
+        body { background: #f8f8fb; }
+
+        .sidebar {
+            position: fixed; top: 0; left: 0; bottom: 0;
+            width: 240px; background: #fff;
+            border-right: 1px solid #eee;
+            display: flex; flex-direction: column; z-index: 50;
+        }
+        .sidebar-brand { padding: 24px 24px 20px; border-bottom: 1px solid #f0f0f0; }
+        .sidebar-brand .name { font-size: 16px; font-weight: 700; color: #1a1a2e; display: flex; align-items: center; gap: 8px; }
+        .sidebar-brand .name .dot { width: 8px; height: 8px; border-radius: 50%; background: linear-gradient(135deg, {{ agency.primary_color }}, {{ agency.secondary_color }}); }
+        .sidebar-brand .tagline { font-size: 11px; color: #aaa; margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+
+        .sidebar-nav { padding: 16px 12px; flex: 1; }
+        .sidebar-nav a {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 14px; border-radius: 8px;
+            font-size: 14px; font-weight: 500; color: #666;
+            text-decoration: none; transition: all 0.15s; margin-bottom: 2px;
+        }
+        .sidebar-nav a:hover { background: #f5f5fa; color: #333; }
+        .sidebar-nav a.active { background: linear-gradient(135deg, {{ agency.primary_color }}12, {{ agency.secondary_color }}12); color: {{ agency.primary_color }}; font-weight: 600; }
+        .sidebar-nav a .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+        .nav-badge { background: #dc2626; color: #fff; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 50px; margin-left: auto; }
+
+        .sidebar-footer { padding: 16px 20px; border-top: 1px solid #f0f0f0; font-size: 13px; }
+        .sidebar-footer .user-name { font-weight: 600; color: #333; }
+        .sidebar-footer .user-email { color: #aaa; font-size: 12px; margin-top: 2px; }
+        .sidebar-footer a { color: #bbb; text-decoration: none; font-size: 12px; margin-top: 8px; display: inline-block; }
+
+        .main { margin-left: 240px; min-height: 100vh; }
+
+        .topbar {
+            padding: 20px 36px; display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid #eee; background: #fff;
+        }
+        .topbar h1 { font-size: 20px; font-weight: 700; color: #1a1a2e; }
+
+        .content { padding: 28px 36px; max-width: 640px; }
+
+        .section {
+            background: #fff; border-radius: 10px; border: 1px solid #eee;
+            padding: 28px; margin-bottom: 20px;
+        }
+        .section h2 { font-size: 15px; font-weight: 600; color: #1a1a2e; margin-bottom: 20px; }
+
+        .field { margin-bottom: 18px; }
+        .field label { display: block; font-size: 12px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+        .field input[type="text"],
+        .field input[type="url"] {
+            width: 100%; padding: 10px 14px; border: 1px solid #e0e0e0; border-radius: 8px;
+            font-size: 14px; color: #333; background: #fff; outline: none; font-family: inherit;
+            transition: border-color 0.15s;
+        }
+        .field input:focus { border-color: {{ agency.primary_color }}; box-shadow: 0 0 0 3px {{ agency.primary_color }}15; }
+        .field .hint { font-size: 12px; color: #bbb; margin-top: 4px; }
+
+        .color-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .color-field { display: flex; align-items: center; gap: 12px; }
+        .color-field input[type="color"] {
+            width: 40px; height: 36px; border: 2px solid #eee; border-radius: 8px;
+            cursor: pointer; padding: 2px;
+        }
+        .color-field input[type="text"] {
+            flex: 1; padding: 8px 12px; border: 1px solid #e0e0e0; border-radius: 8px;
+            font-size: 13px; font-family: 'SF Mono', monospace; color: #555;
+        }
+
+        .preview-strip {
+            height: 48px; border-radius: 10px; margin-top: 8px;
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-weight: 700; font-size: 14px; letter-spacing: 0.5px;
+        }
+
+        .save-btn {
+            padding: 10px 28px; border: none; border-radius: 8px;
+            background: #1a1a2e; color: #fff; font-size: 14px; font-weight: 600;
+            cursor: pointer; transition: all 0.15s; font-family: inherit;
+        }
+        .save-btn:hover { background: #2a2a4e; }
+
+        .toast {
+            background: #ecfdf5; border: 1px solid #a7f3d0; color: #059669;
+            padding: 10px 16px; border-radius: 8px; font-size: 13px; font-weight: 500;
+            margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
+        }
+
+        @media (max-width: 800px) {
+            .sidebar { display: none; }
+            .main { margin-left: 0; }
+            .content { padding: 20px; }
+            .color-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="sidebar-brand">
+        <div class="name"><span class="dot"></span> {{ agency.name }}</div>
+        <div class="tagline">Agency Dashboard</div>
+    </div>
+    <nav class="sidebar-nav">
+        <a href="{{ url_for('admin_dashboard') }}"><span class="nav-icon">◉</span> Clients</a>
+        <a href="{{ url_for('admin_meetings') }}"><span class="nav-icon">☷</span> Meetings{% if pending_meetings %}<span class="nav-badge">{{ pending_meetings }}</span>{% endif %}</a>
+        <a href="{{ url_for('admin_mail') }}"><span class="nav-icon">✉</span> Mail</a>
+        <a href="{{ url_for('admin_onboarding_setup') }}"><span class="nav-icon">&#9889;</span> Onboarding Setup</a>
+        <a href="{{ url_for('admin_settings') }}" class="active"><span class="nav-icon">⚙</span> Settings</a>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="user-name">{{ owner.name }}</div>
+        <div class="user-email">{{ owner.email }}</div>
+        <a href="{{ url_for('logout') }}">Sign out</a>
+    </div>
+</div>
+
+<div class="main">
+    <div class="topbar">
+        <h1>Settings</h1>
+    </div>
+
+    <div class="content">
+        {% if success %}
+        <div class="toast">✓ Settings saved successfully</div>
+        {% endif %}
+
+        <form method="POST">
+            <div class="section">
+                <h2>Agency details</h2>
+                <div class="field">
+                    <label>Agency Name</label>
+                    <input type="text" name="name" value="{{ agency.name }}" required>
+                </div>
+                <div class="field">
+                    <label>URL Slug</label>
+                    <input type="text" name="slug" value="{{ agency.slug }}" required>
+                    <div class="hint">Your onboarding link: {{ request.host_url }}a/{{ agency.slug }}</div>
+                </div>
+                <div class="field">
+                    <label>Logo URL</label>
+                    <input type="url" name="logo_url" value="{{ agency.logo_url }}" placeholder="https://example.com/logo.png">
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Brand colors</h2>
+                <div class="color-grid">
+                    <div class="field">
+                        <label>Primary</label>
+                        <div class="color-field">
+                            <input type="color" name="primary_color" value="{{ agency.primary_color }}" id="pc" oninput="document.getElementById('pct').value=this.value;updatePreview()">
+                            <input type="text" value="{{ agency.primary_color }}" id="pct" oninput="document.getElementById('pc').value=this.value;updatePreview()">
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label>Secondary</label>
+                        <div class="color-field">
+                            <input type="color" name="secondary_color" value="{{ agency.secondary_color }}" id="sc" oninput="document.getElementById('sct').value=this.value;updatePreview()">
+                            <input type="text" value="{{ agency.secondary_color }}" id="sct" oninput="document.getElementById('sc').value=this.value;updatePreview()">
+                        </div>
+                    </div>
+                </div>
+                <div class="preview-strip" id="preview" style="background:linear-gradient(135deg, {{ agency.primary_color }}, {{ agency.secondary_color }});">
+                    {{ agency.name }}
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Airtable Integration</h2>
+                <p style="font-size:13px;color:#888;margin:-12px 0 18px;">Connect your Airtable to automatically track clients. Paste your <a href="https://airtable.com/create/tokens" target="_blank" style="color:{{ agency.primary_color }};">Personal Access Token</a> below.</p>
+                <div class="field">
+                    <label>Airtable Personal Access Token</label>
+                    <input type="password" name="airtable_token" value="{{ agency.airtable_token or '' }}" placeholder="pat..." autocomplete="off" style="width:100%;padding:10px 14px;border:1px solid #e0e0e0;border-radius:8px;font-size:14px;color:#333;background:#fff;outline:none;font-family:inherit;">
+                    <div class="hint">Requires scopes: data.records:read, data.records:write, schema.bases:read, schema.bases:write</div>
+                </div>
+                <div class="field">
+                    <label>Airtable Base ID</label>
+                    <input type="text" name="airtable_base_id" value="{{ agency.airtable_base_id or '' }}" placeholder="appXXXXXXXX">
+                    <div class="hint">Find in your Airtable base URL: airtable.com/<strong>appXXXX</strong>/...</div>
+                </div>
+                {% if agency.airtable_token and agency.airtable_base_id %}
+                <div style="margin-top:12px;">
+                    {% if agency.airtable_table_id %}
+                    <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;font-size:13px;color:#059669;">
+                        <span>&#10003;</span> Clients table connected ({{ agency.airtable_table_id }})
+                    </div>
+                    {% else %}
+                    <button type="button" onclick="setupAirtable()" class="save-btn" style="background:{{ agency.primary_color }};">Create Clients Table in Airtable</button>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="save-btn">Save changes</button>
+        </form>
+    </div>
+</div>
+
+<script>
+function updatePreview() {
+    document.getElementById('preview').style.background =
+        `linear-gradient(135deg, ${document.getElementById('pc').value}, ${document.getElementById('sc').value})`;
+}
+
+function setupAirtable() {
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = 'Creating table...';
+    fetch('/admin/api/airtable/setup', {method:'POST', headers:{'Content-Type':'application/json'}})
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                btn.textContent = 'Table created!';
+                btn.style.background = '#059669';
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                btn.textContent = 'Error: ' + (data.error || 'Unknown');
+                btn.style.background = '#dc2626';
+                setTimeout(() => { btn.disabled = false; btn.textContent = 'Create Clients Table in Airtable'; btn.style.background = ''; }, 3000);
+            }
+        })
+        .catch(() => { btn.disabled = false; btn.textContent = 'Create Clients Table in Airtable'; btn.style.background = ''; });
+}
+
+
+</script>
+</body>
+</html>

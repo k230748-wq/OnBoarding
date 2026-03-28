@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campaign Ideas - {{ agency_name }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f5f7; color: #333; min-height: 100vh; }
+
+        /* ── Top Bar ── */
+        .top-bar {
+            background: #fff; padding: 0 32px; height: 56px; border-bottom: 1px solid #e1e4e8;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .tb-left { display: flex; align-items: center; gap: 12px; }
+        .tb-left h1 { font-size: 16px; font-weight: 700; color: #1a1a2e; letter-spacing: -0.3px; }
+        .tb-left .separator { width: 1px; height: 20px; background: #e1e4e8; }
+        .tb-left .agency { font-size: 13px; color: #8b949e; }
+        .tb-actions { display: flex; gap: 8px; align-items: center; }
+        .btn {
+            padding: 7px 14px; border-radius: 6px; font-size: 13px; font-weight: 500;
+            border: 1px solid #d0d7de; background: #fff; color: #24292f; cursor: pointer;
+            font-family: inherit; transition: all 0.12s; text-decoration: none;
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn:hover { background: #f6f8fa; border-color: #bbb; }
+        .btn-green { background: #2da44e; color: #fff; border-color: #2da44e; }
+        .btn-green:hover { background: #218838; }
+        .btn-primary { background: #1a1a2e; color: #fff; border-color: #1a1a2e; }
+        .btn-primary:hover { background: #2d2d4e; }
+
+        /* ── Kanban Board ── */
+        .board-wrapper { padding: 24px 32px; height: calc(100vh - 56px); overflow-x: auto; }
+        .board {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 16px; min-width: 900px; height: 100%;
+        }
+        .column {
+            background: #fff; border: 1px solid #d0d7de; border-radius: 8px;
+            display: flex; flex-direction: column; min-height: 0;
+        }
+        .col-header {
+            padding: 14px 16px; border-bottom: 1px solid #d0d7de;
+            display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+        }
+        .col-header-left { display: flex; align-items: center; gap: 8px; }
+        .col-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .col-title { font-size: 13px; font-weight: 600; color: #24292f; }
+        .col-count {
+            font-size: 11px; font-weight: 600; color: #8b949e; background: #f6f8fa;
+            border-radius: 10px; padding: 1px 8px; min-width: 20px; text-align: center;
+        }
+        .col-cards { padding: 12px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 10px; }
+
+        /* ── Stage Colors ── */
+        .stage-idea { background: #8b949e; }
+        .stage-planning { background: #0969da; }
+        .stage-active { background: #2da44e; }
+        .stage-completed { background: #6e40c9; }
+
+        /* ── Campaign Cards ── */
+        .card {
+            background: #fff; border: 1px solid #d0d7de; border-radius: 8px;
+            padding: 14px; cursor: pointer; transition: box-shadow 0.12s, border-color 0.12s;
+        }
+        .card:hover { border-color: #bbb; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .card-name { font-size: 13px; font-weight: 600; color: #24292f; margin-bottom: 6px; line-height: 1.4; }
+        .card-objective { font-size: 12px; color: #57606a; margin-bottom: 10px; line-height: 1.4; }
+        .card-meta { display: flex; flex-wrap: wrap; gap: 4px; }
+        .card-tag {
+            font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 4px;
+            background: #f6f8fa; border: 1px solid #d0d7de; color: #57606a;
+        }
+        .card-budget { font-size: 11px; color: #8b949e; margin-top: 8px; font-weight: 500; }
+
+        /* ── Empty State ── */
+        .col-empty { text-align: center; padding: 24px 12px; color: #8b949e; font-size: 12px; }
+
+        /* ── Modal Overlay ── */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+            z-index: 1000; justify-content: center; align-items: flex-start; padding: 60px 20px;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: #fff; border-radius: 10px; width: 100%; max-width: 600px;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.15); max-height: calc(100vh - 120px);
+            display: flex; flex-direction: column;
+        }
+        .modal-header {
+            padding: 18px 24px; border-bottom: 1px solid #e1e4e8;
+            display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+        }
+        .modal-header h2 { font-size: 15px; font-weight: 700; color: #1a1a2e; }
+        .modal-close {
+            width: 30px; height: 30px; border-radius: 6px; border: none; background: none;
+            cursor: pointer; font-size: 18px; color: #8b949e; transition: all 0.12s;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .modal-close:hover { background: #f6f8fa; color: #24292f; }
+        .modal-body { padding: 24px; overflow-y: auto; flex: 1; }
+        .modal-footer {
+            padding: 16px 24px; border-top: 1px solid #e1e4e8; display: flex;
+            align-items: center; justify-content: space-between; flex-shrink: 0;
+        }
+        .modal-footer-right { display: flex; gap: 8px; }
+
+        /* ── Form Fields ── */
+        .form-group { margin-bottom: 16px; }
+        .form-label { display: block; font-size: 12px; font-weight: 600; color: #57606a; margin-bottom: 6px; }
+        .form-input, .form-textarea, .form-select {
+            width: 100%; padding: 8px 12px; border: 1px solid #d0d7de; border-radius: 6px;
+            font-size: 13px; font-family: inherit; color: #24292f; background: #fff;
+            transition: border-color 0.12s; outline: none;
+        }
+        .form-input:focus, .form-textarea:focus, .form-select:focus { border-color: #0969da; box-shadow: 0 0 0 3px rgba(9,105,218,0.12); }
+        .form-textarea { resize: vertical; min-height: 72px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        /* ── Stage Pills ── */
+        .stage-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+        .stage-pill {
+            padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;
+            border: 1px solid #d0d7de; background: #fff; color: #57606a; cursor: pointer;
+            transition: all 0.12s;
+        }
+        .stage-pill:hover { border-color: #bbb; }
+        .stage-pill.selected { color: #fff; border-color: transparent; }
+        .stage-pill.selected[data-stage="idea"] { background: #8b949e; }
+        .stage-pill.selected[data-stage="planning"] { background: #0969da; }
+        .stage-pill.selected[data-stage="active"] { background: #2da44e; }
+        .stage-pill.selected[data-stage="completed"] { background: #6e40c9; }
+
+        /* ── Delete Button ── */
+        .btn-danger { color: #cf222e; border-color: #cf222e; background: #fff; }
+        .btn-danger:hover { background: #cf222e; color: #fff; }
+
+        /* ── Toast ── */
+        .toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 2000; display: flex; flex-direction: column; gap: 8px; }
+        .toast {
+            padding: 10px 18px; border-radius: 6px; font-size: 13px; font-weight: 500;
+            color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: toastIn 0.25s ease-out;
+        }
+        .toast-success { background: #2da44e; }
+        .toast-error { background: #cf222e; }
+        @keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ── AI Generate Overlay ── */
+        .ai-loading {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+            z-index: 1500; justify-content: center; align-items: center;
+        }
+        .ai-loading.active { display: flex; }
+        .ai-loading-box {
+            background: #fff; border-radius: 10px; padding: 32px 40px; text-align: center;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.15);
+        }
+        .ai-spinner {
+            width: 32px; height: 32px; border: 3px solid #e1e4e8; border-top-color: #2da44e;
+            border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 14px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .ai-loading-box p { font-size: 14px; color: #57606a; font-weight: 500; }
+
+        /* ── Scrollbar ── */
+        .col-cards::-webkit-scrollbar { width: 4px; }
+        .col-cards::-webkit-scrollbar-track { background: transparent; }
+        .col-cards::-webkit-scrollbar-thumb { background: #d0d7de; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="top-bar">
+    <div class="tb-left">
+        <h1>Campaign Ideas</h1>
+        <div class="separator"></div>
+        <span class="agency">{{ agency_name }}</span>
+    </div>
+    <div class="tb-actions">
+        <a href="/a/{{ slug }}/dashboard/{{ onboarding_id }}/tools" class="btn">Back</a>
+        <button class="btn btn-green" onclick="aiGenerate()">
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M7.998.002a.75.75 0 01.536.225l1.46 1.498 2.073.347a.75.75 0 01.597.597l.347 2.073 1.498 1.46a.75.75 0 010 1.072l-1.498 1.46-.347 2.073a.75.75 0 01-.597.597l-2.073.347-1.46 1.498a.75.75 0 01-1.072 0l-1.46-1.498-2.073-.347a.75.75 0 01-.597-.597l-.347-2.073-1.498-1.46a.75.75 0 010-1.072l1.498-1.46.347-2.073a.75.75 0 01.597-.597l2.073-.347L7.462.227A.75.75 0 017.998.002zM8 3a.5.5 0 00-.5.5v3h-3a.5.5 0 000 1h3v3a.5.5 0 001 0v-3h3a.5.5 0 000-1h-3v-3A.5.5 0 008 3z"/></svg>
+            AI Generate
+        </button>
+        <button class="btn btn-primary" onclick="openNewModal()">+ New Campaign</button>
+    </div>
+</div>
+
+<!-- Kanban Board -->
+<div class="board-wrapper">
+    <div class="board">
+        {% set stages = [('idea', 'Idea'), ('planning', 'Planning'), ('active', 'Active'), ('completed', 'Completed')] %}
+        {% for stage_key, stage_label in stages %}
+        <div class="column" data-stage="{{ stage_key }}">
+            <div class="col-header">
+                <div class="col-header-left">
+                    <div class="col-dot stage-{{ stage_key }}"></div>
+                    <span class="col-title">{{ stage_label }}</span>
+                </div>
+                <span class="col-count" id="count-{{ stage_key }}">
+                    {{ campaigns|selectattr('stage', 'equalto', stage_key)|list|length }}
+                </span>
+            </div>
+            <div class="col-cards" id="col-{{ stage_key }}">
+                {% for c in campaigns if c.stage == stage_key %}
+                <div class="card" onclick="openEditModal('{{ c.id }}')" data-id="{{ c.id }}">
+                    <div class="card-name">{{ c.name }}</div>
+                    {% if c.objective %}
+                    <div class="card-objective">{{ c.objective[:80] }}{% if c.objective|length > 80 %}...{% endif %}</div>
+                    {% endif %}
+                    {% if c.channels %}
+                    <div class="card-meta">
+                        {% for ch in c.channels %}
+                        <span class="card-tag">{{ ch }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    {% if c.budget %}
+                    <div class="card-budget">${{ c.budget }}</div>
+                    {% endif %}
+                </div>
+                {% else %}
+                <div class="col-empty">No campaigns</div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Campaign Modal -->
+<div class="modal-overlay" id="campaignModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 id="modalTitle">New Campaign</h2>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <input type="hidden" id="campaignId" value="">
+
+            <div class="form-group">
+                <label class="form-label">Campaign Name</label>
+                <input type="text" class="form-input" id="fName" placeholder="e.g. Q2 Brand Awareness Push">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Stage</label>
+                <div class="stage-pills" id="stagePills">
+                    <button type="button" class="stage-pill selected" data-stage="idea" onclick="selectStage('idea')">Idea</button>
+                    <button type="button" class="stage-pill" data-stage="planning" onclick="selectStage('planning')">Planning</button>
+                    <button type="button" class="stage-pill" data-stage="active" onclick="selectStage('active')">Active</button>
+                    <button type="button" class="stage-pill" data-stage="completed" onclick="selectStage('completed')">Completed</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Objective</label>
+                <textarea class="form-textarea" id="fObjective" placeholder="What is the goal of this campaign?"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea class="form-textarea" id="fDescription" placeholder="Detailed description of the campaign"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Target Audience</label>
+                <input type="text" class="form-input" id="fTargetAudience" placeholder="e.g. Millennials aged 25-34 in urban areas">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Channels (comma-separated)</label>
+                <input type="text" class="form-input" id="fChannels" placeholder="e.g. Instagram, Google Ads, Email">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Budget</label>
+                    <input type="text" class="form-input" id="fBudget" placeholder="e.g. 5000">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">KPIs (comma-separated)</label>
+                    <input type="text" class="form-input" id="fKpis" placeholder="e.g. CTR, ROAS, Leads">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Start Date</label>
+                    <input type="date" class="form-input" id="fStartDate">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">End Date</label>
+                    <input type="date" class="form-input" id="fEndDate">
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <div>
+                <button class="btn btn-danger" id="btnDelete" onclick="deleteCampaign()" style="display:none;">Delete</button>
+            </div>
+            <div class="modal-footer-right">
+                <button class="btn" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" id="btnSave" onclick="saveCampaign()">Save Campaign</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Loading Overlay -->
+<div class="ai-loading" id="aiLoading">
+    <div class="ai-loading-box">
+        <div class="ai-spinner"></div>
+        <p>Generating campaign ideas...</p>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+const BASE = '/a/{{ slug }}/dashboard/{{ onboarding_id }}';
+const API = BASE + '/campaigns';
+
+let allCampaigns = {{ campaigns|tojson }};
+let editingId = null;
+
+/* ── Toast ── */
+function showToast(msg, type) {
+    type = type || 'success';
+    const container = document.getElementById('toastContainer');
+    const el = document.createElement('div');
+    el.className = 'toast toast-' + type;
+    el.textContent = msg;
+    container.appendChild(el);
+    setTimeout(function() { el.remove(); }, 3000);
+}
+
+/* ── Render Board ── */
+function renderBoard() {
+    var stages = ['idea', 'planning', 'active', 'completed'];
+    stages.forEach(function(stage) {
+        var col = document.getElementById('col-' + stage);
+        var count = document.getElementById('count-' + stage);
+        var items = allCampaigns.filter(function(c) { return c.stage === stage; });
+        count.textContent = items.length;
+
+        if (items.length === 0) {
+            col.innerHTML = '<div class="col-empty">No campaigns</div>';
+            return;
+        }
+
+        col.innerHTML = '';
+        items.forEach(function(c) {
+            var card = document.createElement('div');
+            card.className = 'card';
+            card.dataset.id = c.id;
+            card.onclick = function() { openEditModal(c.id); };
+
+            var html = '<div class="card-name">' + escHtml(c.name) + '</div>';
+            if (c.objective) {
+                var obj = c.objective.length > 80 ? c.objective.substring(0, 80) + '...' : c.objective;
+                html += '<div class="card-objective">' + escHtml(obj) + '</div>';
+            }
+            if (c.channels && c.channels.length > 0) {
+                html += '<div class="card-meta">';
+                c.channels.forEach(function(ch) {
+                    html += '<span class="card-tag">' + escHtml(ch) + '</span>';
+                });
+                html += '</div>';
+            }
+            if (c.budget) {
+                html += '<div class="card-budget">$' + escHtml(String(c.budget)) + '</div>';
+            }
+            card.innerHTML = html;
+            col.appendChild(card);
+        });
+    });
+}
+
+function escHtml(s) {
+    var div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
+}
+
+/* ── Modal ── */
+function openNewModal() {
+    editingId = null;
+    document.getElementById('modalTitle').textContent = 'New Campaign';
+    document.getElementById('campaignId').value = '';
+    document.getElementById('fName').value = '';
+    document.getElementById('fObjective').value = '';
+    document.getElementById('fDescription').value = '';
+    document.getElementById('fTargetAudience').value = '';
+    document.getElementById('fChannels').value = '';
+    document.getElementById('fBudget').value = '';
+    document.getElementById('fKpis').value = '';
+    document.getElementById('fStartDate').value = '';
+    document.getElementById('fEndDate').value = '';
+    selectStage('idea');
+    document.getElementById('btnDelete').style.display = 'none';
+    document.getElementById('btnSave').textContent = 'Save Campaign';
+    document.getElementById('campaignModal').classList.add('active');
+}
+
+function openEditModal(id) {
+    var c = allCampaigns.find(function(x) { return String(x.id) === String(id); });
+    if (!c) return;
+    editingId = c.id;
+    document.getElementById('modalTitle').textContent = 'Edit Campaign';
+    document.getElementById('campaignId').value = c.id;
+    document.getElementById('fName').value = c.name || '';
+    document.getElementById('fObjective').value = c.objective || '';
+    document.getElementById('fDescription').value = c.description || '';
+    document.getElementById('fTargetAudience').value = c.target_audience || '';
+    document.getElementById('fChannels').value = (c.channels || []).join(', ');
+    document.getElementById('fBudget').value = c.budget || '';
+    document.getElementById('fKpis').value = (c.kpis || []).join(', ');
+    document.getElementById('fStartDate').value = c.start_date || '';
+    document.getElementById('fEndDate').value = c.end_date || '';
+    selectStage(c.stage || 'idea');
+    document.getElementById('btnDelete').style.display = 'inline-flex';
+    document.getElementById('btnSave').textContent = 'Update Campaign';
+    document.getElementById('campaignModal').classList.add('active');
+}
+
+function closeModal() {
+    document.getElementById('campaignModal').classList.remove('active');
+    editingId = null;
+}
+
+function getSelectedStage() {
+    var sel = document.querySelector('.stage-pill.selected');
+    return sel ? sel.dataset.stage : 'idea';
+}
+
+function selectStage(stage) {
+    document.querySelectorAll('.stage-pill').forEach(function(el) {
+        el.classList.toggle('selected', el.dataset.stage === stage);
+    });
+}
+
+/* ── Collect Form Data ── */
+function collectFormData() {
+    var channels = document.getElementById('fChannels').value;
+    channels = channels ? channels.split(',').map(function(s) { return s.trim(); }).filter(Boolean) : [];
+    var kpis = document.getElementById('fKpis').value;
+    kpis = kpis ? kpis.split(',').map(function(s) { return s.trim(); }).filter(Boolean) : [];
+
+    return {
+        name: document.getElementById('fName').value.trim(),
+        stage: getSelectedStage(),
+        objective: document.getElementById('fObjective').value.trim(),
+        description: document.getElementById('fDescription').value.trim(),
+        target_audience: document.getElementById('fTargetAudience').value.trim(),
+        channels: channels,
+        budget: document.getElementById('fBudget').value.trim(),
+        kpis: kpis,
+        start_date: document.getElementById('fStartDate').value,
+        end_date: document.getElementById('fEndDate').value
+    };
+}
+
+/* ── CRUD ── */
+function saveCampaign() {
+    var data = collectFormData();
+    if (!data.name) {
+        showToast('Campaign name is required', 'error');
+        return;
+    }
+
+    var btn = document.getElementById('btnSave');
+    btn.disabled = true;
+    btn.textContent = 'Saving...';
+
+    if (editingId) {
+        fetch(API + '/' + editingId, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+            if (resp.error) throw new Error(resp.error);
+            var idx = allCampaigns.findIndex(function(c) { return String(c.id) === String(editingId); });
+            if (idx !== -1) {
+                allCampaigns[idx] = Object.assign({}, allCampaigns[idx], data, { id: editingId });
+            }
+            renderBoard();
+            closeModal();
+            showToast('Campaign updated');
+        })
+        .catch(function(err) { showToast(err.message || 'Failed to update', 'error'); })
+        .finally(function() { btn.disabled = false; btn.textContent = 'Update Campaign'; });
+    } else {
+        fetch(API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(resp) {
+            if (resp.error) throw new Error(resp.error);
+            allCampaigns.push(resp);
+            renderBoard();
+            closeModal();
+            showToast('Campaign created');
+        })
+        .catch(function(err) { showToast(err.message || 'Failed to create', 'error'); })
+        .finally(function() { btn.disabled = false; btn.textContent = 'Save Campaign'; });
+    }
+}
+
+function deleteCampaign() {
+    if (!editingId) return;
+    if (!confirm('Delete this campaign? This cannot be undone.')) return;
+
+    var btn = document.getElementById('btnDelete');
+    btn.disabled = true;
+    btn.textContent = 'Deleting...';
+
+    fetch(API + '/' + editingId, { method: 'DELETE' })
+    .then(function(r) { return r.json(); })
+    .then(function(resp) {
+        if (resp.error) throw new Error(resp.error);
+        allCampaigns = allCampaigns.filter(function(c) { return String(c.id) !== String(editingId); });
+        renderBoard();
+        closeModal();
+        showToast('Campaign deleted');
+    })
+    .catch(function(err) { showToast(err.message || 'Failed to delete', 'error'); })
+    .finally(function() { btn.disabled = false; btn.textContent = 'Delete'; });
+}
+
+/* ── AI Generate ── */
+function aiGenerate() {
+    document.getElementById('aiLoading').classList.add('active');
+
+    fetch(API + '/ai-generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(resp) {
+        if (resp.error) throw new Error(resp.error);
+        var newCampaigns = resp.campaigns || resp;
+        if (Array.isArray(newCampaigns)) {
+            newCampaigns.forEach(function(c) { allCampaigns.push(c); });
+        }
+        renderBoard();
+        showToast('AI campaigns generated');
+    })
+    .catch(function(err) { showToast(err.message || 'AI generation failed', 'error'); })
+    .finally(function() { document.getElementById('aiLoading').classList.remove('active'); });
+}
+
+/* ── Close modal on overlay click ── */
+document.getElementById('campaignModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
+
+/* ── Close modal on Escape ── */
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeModal();
+});
+</script>
+
+</body>
+</html>

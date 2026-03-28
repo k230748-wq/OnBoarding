@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ agency.name }} — Mail</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern-ui.css') }}">
+    <style>
+        body { background: #f8f8fb; }
+
+        .sidebar {
+            position: fixed; top: 0; left: 0; bottom: 0;
+            width: 240px; background: #fff;
+            border-right: 1px solid #eee;
+            display: flex; flex-direction: column; z-index: 50;
+        }
+        .sidebar-brand { padding: 24px 24px 20px; border-bottom: 1px solid #f0f0f0; }
+        .sidebar-brand .name { font-size: 16px; font-weight: 700; color: #1a1a2e; display: flex; align-items: center; gap: 8px; }
+        .sidebar-brand .name .dot { width: 8px; height: 8px; border-radius: 50%; background: linear-gradient(135deg, {{ agency.primary_color }}, {{ agency.secondary_color }}); }
+        .sidebar-brand .tagline { font-size: 11px; color: #aaa; margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+
+        .sidebar-nav { padding: 16px 12px; flex: 1; }
+        .sidebar-nav a {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 14px; border-radius: 8px;
+            font-size: 14px; font-weight: 500; color: #666;
+            text-decoration: none; transition: all 0.15s; margin-bottom: 2px;
+        }
+        .sidebar-nav a:hover { background: #f5f5fa; color: #333; }
+        .sidebar-nav a.active { background: linear-gradient(135deg, {{ agency.primary_color }}12, {{ agency.secondary_color }}12); color: {{ agency.primary_color }}; font-weight: 600; }
+        .sidebar-nav a .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+        .nav-badge { background: #dc2626; color: #fff; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 50px; margin-left: auto; }
+
+        .sidebar-footer { padding: 16px 20px; border-top: 1px solid #f0f0f0; font-size: 13px; }
+        .sidebar-footer .user-name { font-weight: 600; color: #333; }
+        .sidebar-footer .user-email { color: #aaa; font-size: 12px; margin-top: 2px; }
+        .sidebar-footer a { color: #bbb; text-decoration: none; font-size: 12px; margin-top: 8px; display: inline-block; }
+
+        .main { margin-left: 240px; min-height: 100vh; }
+
+        .topbar {
+            padding: 20px 36px; display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid #eee; background: #fff;
+        }
+        .topbar h1 { font-size: 20px; font-weight: 700; color: #1a1a2e; }
+
+        .content { padding: 28px 36px; max-width: 640px; }
+
+        .section {
+            background: #fff; border-radius: 10px; border: 1px solid #eee;
+            padding: 28px; margin-bottom: 20px;
+        }
+        .section h2 { font-size: 15px; font-weight: 600; color: #1a1a2e; margin-bottom: 20px; }
+
+        .field { margin-bottom: 18px; }
+        .field label { display: block; font-size: 13px; font-weight: 500; color: #666; margin-bottom: 6px; }
+        .field input[type="text"],
+        .field input[type="email"],
+        .field select,
+        .field textarea {
+            width: 100%; padding: 10px 14px; border: 1px solid #e0e0e0; border-radius: 8px;
+            font-size: 14px; color: #333; background: #fff; outline: none; font-family: inherit;
+            transition: border-color 0.15s; box-sizing: border-box;
+        }
+        .field input:focus, .field select:focus, .field textarea:focus { border-color: {{ agency.primary_color }}; }
+        .field textarea { resize: vertical; min-height: 160px; }
+        .field .hint { font-size: 12px; color: #bbb; margin-top: 4px; }
+
+        .quick-pick { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+        .quick-pick button {
+            padding: 6px 14px; border: 1px solid #e0e0e0; border-radius: 50px;
+            background: #fff; font-size: 13px; color: #555; cursor: pointer;
+            font-family: inherit; transition: all 0.15s;
+        }
+        .quick-pick button:hover { border-color: #999; color: #333; }
+
+        .send-btn {
+            padding: 10px 28px; border: none; border-radius: 8px;
+            background: #1a1a2e; color: #fff; font-size: 14px; font-weight: 600;
+            cursor: pointer; transition: all 0.15s; font-family: inherit;
+        }
+        .send-btn:hover { background: #2a2a4e; }
+
+        .toast {
+            padding: 10px 16px; border-radius: 8px; font-size: 13px; font-weight: 500;
+            margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
+        }
+        .toast-success { background: #ecfdf5; border: 1px solid #a7f3d0; color: #059669; }
+        .toast-error { background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; }
+
+        .setup-info {
+            background: #f8f8fb; border-radius: 8px; padding: 20px; margin-bottom: 20px;
+            border: 1px solid #eee;
+        }
+        .setup-info h3 { font-size: 14px; font-weight: 600; color: #1a1a2e; margin-bottom: 10px; }
+        .setup-info code { background: #fff; padding: 2px 8px; border-radius: 4px; font-size: 13px; border: 1px solid #e0e0e0; }
+        .setup-info p { font-size: 13px; color: #666; line-height: 1.7; margin: 0; }
+
+        @media (max-width: 800px) {
+            .sidebar { display: none; }
+            .main { margin-left: 0; }
+            .content { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="sidebar-brand">
+        <div class="name"><span class="dot"></span> {{ agency.name }}</div>
+        <div class="tagline">Agency Dashboard</div>
+    </div>
+    <nav class="sidebar-nav">
+        <a href="{{ url_for('admin_dashboard') }}"><span class="nav-icon">◉</span> Clients</a>
+        <a href="{{ url_for('admin_meetings') }}"><span class="nav-icon">☷</span> Meetings{% if pending_meetings %}<span class="nav-badge">{{ pending_meetings }}</span>{% endif %}</a>
+        <a href="{{ url_for('admin_mail') }}" class="active"><span class="nav-icon">✉</span> Mail</a>
+        <a href="{{ url_for('admin_onboarding_setup') }}"><span class="nav-icon">&#9889;</span> Onboarding Setup</a>
+        <a href="{{ url_for('admin_settings') }}"><span class="nav-icon">⚙</span> Settings</a>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="user-name">{{ owner.name }}</div>
+        <div class="user-email">{{ owner.email }}</div>
+        <a href="{{ url_for('logout') }}">Sign out</a>
+    </div>
+</div>
+
+<div class="main">
+    <div class="topbar">
+        <h1>Compose Email</h1>
+    </div>
+
+    <div class="content">
+        {% if sent %}
+        <div class="toast toast-success">Email sent successfully.</div>
+        {% endif %}
+        {% if error %}
+        <div class="toast toast-error">{{ error }}</div>
+        {% endif %}
+
+        {% if not mail_configured %}
+        <div class="setup-info">
+            <h3>Email setup required</h3>
+            <p>To send emails, add these variables to your <code>.env</code> file:</p>
+            <p style="margin-top:8px;">
+                <code>SMTP_HOST</code> — your SMTP server (e.g. smtp.gmail.com)<br>
+                <code>SMTP_PORT</code> — port (587 for TLS)<br>
+                <code>SMTP_USER</code> — your email address<br>
+                <code>SMTP_PASS</code> — your email password or app password
+            </p>
+        </div>
+        {% endif %}
+
+        <form method="POST">
+            <div class="section">
+                <h2>Send to client</h2>
+
+                {% if onboardings %}
+                <div class="field">
+                    <label>Quick select a client</label>
+                    <div class="quick-pick">
+                        {% for ob in onboardings %}
+                        <button type="button" onclick="document.getElementById('to').value='{{ ob.data.email }}';document.getElementById('subject').value='Re: {{ ob.data.full_name }} — ';">{{ ob.data.full_name }}</button>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="field">
+                    <label>To</label>
+                    <input type="email" name="to" id="to" placeholder="client@example.com" required>
+                </div>
+                <div class="field">
+                    <label>Subject</label>
+                    <input type="text" name="subject" id="subject" placeholder="Subject line..." required>
+                </div>
+                <div class="field">
+                    <label>Message</label>
+                    <textarea name="body" placeholder="Write your message here..."></textarea>
+                </div>
+            </div>
+
+            <button type="submit" class="send-btn">Send Email</button>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ agency.name }} — Onboarding Setup</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern-ui.css') }}">
+    <style>
+        body { background: #f8f8fb; }
+
+        /* Sidebar - same as other admin pages */
+        .sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: 240px; background: #fff; border-right: 1px solid #eee; display: flex; flex-direction: column; z-index: 50; }
+        .sidebar-brand { padding: 24px 24px 20px; border-bottom: 1px solid #f0f0f0; }
+        .sidebar-brand .name { font-size: 16px; font-weight: 700; color: #1a1a2e; display: flex; align-items: center; gap: 8px; }
+        .sidebar-brand .name .dot { width: 8px; height: 8px; border-radius: 50%; background: linear-gradient(135deg, {{ agency.primary_color }}, {{ agency.secondary_color }}); }
+        .sidebar-brand .tagline { font-size: 11px; color: #aaa; margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+        .sidebar-nav { padding: 16px 12px; flex: 1; }
+        .sidebar-nav a { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 8px; font-size: 14px; font-weight: 500; color: #666; text-decoration: none; transition: all 0.15s; margin-bottom: 2px; }
+        .sidebar-nav a:hover { background: #f5f5fa; color: #333; }
+        .sidebar-nav a.active { background: linear-gradient(135deg, {{ agency.primary_color }}12, {{ agency.secondary_color }}12); color: {{ agency.primary_color }}; font-weight: 600; }
+        .sidebar-nav a .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+        .nav-badge { background: #dc2626; color: #fff; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 50px; margin-left: auto; }
+        .sidebar-footer { padding: 16px 20px; border-top: 1px solid #f0f0f0; font-size: 13px; }
+        .sidebar-footer .user-name { font-weight: 600; color: #333; }
+        .sidebar-footer .user-email { color: #aaa; font-size: 12px; margin-top: 2px; }
+        .sidebar-footer a { color: #bbb; text-decoration: none; font-size: 12px; margin-top: 8px; display: inline-block; }
+
+        .main { margin-left: 240px; min-height: 100vh; }
+        .topbar { padding: 20px 36px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #eee; background: #fff; }
+        .topbar h1 { font-size: 20px; font-weight: 700; color: #1a1a2e; }
+        .content { padding: 28px 36px; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 0; border-bottom: 2px solid #eee; margin-bottom: 24px; }
+        .tab { padding: 10px 24px; font-size: 14px; font-weight: 600; color: #999; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.15s; }
+        .tab:hover { color: #666; }
+        .tab.active { color: {{ agency.primary_color }}; border-bottom-color: {{ agency.primary_color }}; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Section cards */
+        .section-card { background: #fff; border: 1px solid #eee; border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
+        .section-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; cursor: pointer; }
+        .section-header:hover { background: #fafafa; }
+        .section-title { font-size: 15px; font-weight: 600; color: #1a1a2e; display: flex; align-items: center; gap: 10px; }
+        .section-title .badge { font-size: 11px; color: #999; background: #f0f0f0; padding: 2px 8px; border-radius: 50px; font-weight: 500; }
+        .section-actions { display: flex; align-items: center; gap: 8px; }
+        .section-body { padding: 0 20px 16px; border-top: 1px solid #f0f0f0; display: none; }
+        .section-body.open { display: block; }
+
+        /* Question rows */
+        .question-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f8f8f8; }
+        .question-row:last-child { border-bottom: none; }
+        .question-info { display: flex; align-items: center; gap: 10px; }
+        .question-label { font-size: 14px; color: #333; }
+        .type-badge { font-size: 11px; color: #888; background: #f5f5fa; padding: 2px 8px; border-radius: 4px; }
+        .required-badge { font-size: 11px; color: #dc2626; background: #fef2f2; padding: 2px 6px; border-radius: 4px; }
+
+        /* Template cards */
+        .template-card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 20px; margin-bottom: 12px; display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+        .template-info { flex: 1; }
+        .template-name { font-size: 15px; font-weight: 600; color: #1a1a2e; display: flex; align-items: center; gap: 8px; }
+        .template-desc { font-size: 13px; color: #888; margin-top: 4px; }
+        .template-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .template-tag { font-size: 11px; color: {{ agency.primary_color }}; background: {{ agency.primary_color }}10; padding: 2px 10px; border-radius: 50px; }
+
+        /* Buttons */
+        .btn-sm { padding: 6px 14px; font-size: 13px; border-radius: 6px; border: none; cursor: pointer; font-weight: 500; transition: all 0.15s; }
+        .btn-primary-sm { background: {{ agency.primary_color }}; color: #fff; }
+        .btn-primary-sm:hover { opacity: 0.9; }
+        .btn-ghost { background: transparent; color: #999; }
+        .btn-ghost:hover { background: #f5f5fa; color: #333; }
+        .btn-danger-sm { background: transparent; color: #dc2626; }
+        .btn-danger-sm:hover { background: #fef2f2; }
+
+        /* Toggle switch */
+        .toggle { position: relative; width: 40px; height: 22px; cursor: pointer; }
+        .toggle input { opacity: 0; width: 0; height: 0; }
+        .toggle .slider { position: absolute; inset: 0; background: #ddd; border-radius: 22px; transition: 0.2s; }
+        .toggle .slider:before { content: ''; position: absolute; height: 16px; width: 16px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: 0.2s; }
+        .toggle input:checked + .slider { background: {{ agency.primary_color }}; }
+        .toggle input:checked + .slider:before { transform: translateX(18px); }
+
+        /* Modal */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 100; justify-content: center; align-items: center; }
+        .modal-overlay.open { display: flex; }
+        .modal { background: #fff; border-radius: 16px; padding: 28px; width: 90%; max-width: 520px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
+        .modal h3 { font-size: 18px; font-weight: 700; color: #1a1a2e; margin-bottom: 20px; }
+        .modal label { font-size: 13px; font-weight: 600; color: #555; display: block; margin-bottom: 6px; }
+        .modal input, .modal textarea, .modal select { width: 100%; padding: 10px 14px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; margin-bottom: 14px; box-sizing: border-box; }
+        .modal textarea { min-height: 80px; resize: vertical; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
+        .checkbox-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 14px; }
+        .checkbox-grid label { display: flex; align-items: center; gap: 6px; font-weight: 400; font-size: 13px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+    <div class="sidebar-brand">
+        <div class="name"><span class="dot"></span> {{ agency.name }}</div>
+        <div class="tagline">Admin Panel</div>
+    </div>
+    <nav class="sidebar-nav">
+        <a href="{{ url_for('admin_dashboard') }}"><span class="nav-icon">&#9673;</span> Clients</a>
+        <a href="{{ url_for('admin_meetings') }}"><span class="nav-icon">&#9783;</span> Meetings</a>
+        <a href="{{ url_for('admin_mail') }}"><span class="nav-icon">&#9993;</span> Mail</a>
+        <a href="{{ url_for('admin_onboarding_setup') }}" class="active"><span class="nav-icon">&#9889;</span> Onboarding Setup</a>
+        <a href="{{ url_for('admin_settings') }}"><span class="nav-icon">&#9881;</span> Settings</a>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="user-name">{{ owner.name }}</div>
+        <div class="user-email">{{ owner.email }}</div>
+        <a href="{{ url_for('logout') }}">Sign out</a>
+    </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+    <div class="topbar">
+        <h1>Onboarding Setup</h1>
+    </div>
+    <div class="content">
+        <!-- Tabs -->
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('questions')">Questions</div>
+            <div class="tab" onclick="switchTab('documents')">Documents</div>
+        </div>
+
+        <!-- Questions Tab -->
+        <div class="tab-content active" id="tab-questions">
+            {% for section in sections %}
+            <div class="section-card" data-id="{{ section.id }}">
+                <div class="section-header" onclick="toggleSection(this)">
+                    <div class="section-title">
+                        {{ section.title }}
+                        <span class="badge">{{ section.questions|length }} questions</span>
+                        {% if section.is_default %}<span class="badge">default</span>{% endif %}
+                    </div>
+                    <div class="section-actions" onclick="event.stopPropagation()">
+                        <label class="toggle">
+                            <input type="checkbox" {% if section.is_enabled %}checked{% endif %} onchange="toggleSectionEnabled('{{ section.id }}', this.checked)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="section-body">
+                    {% for q in section.questions %}
+                    <div class="question-row">
+                        <div class="question-info">
+                            <span class="question-label">{{ q.label }}</span>
+                            <span class="type-badge">{{ q.field_type }}</span>
+                            {% if q.is_required %}<span class="required-badge">required</span>{% endif %}
+                        </div>
+                        <div style="display:flex;gap:6px;align-items:center;">
+                            <label class="toggle">
+                                <input type="checkbox" {% if q.is_enabled %}checked{% endif %} onchange="toggleQuestionEnabled('{{ q.id }}', this.checked)">
+                                <span class="slider"></span>
+                            </label>
+                            <button class="btn-sm btn-ghost" onclick="openEditQuestion('{{ q.id }}', {{ q|tojson }})">Edit</button>
+                            <button class="btn-sm btn-danger-sm" onclick="deleteQuestion('{{ q.id }}')">&times;</button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    <div style="padding-top:12px;">
+                        <button class="btn-sm btn-primary-sm" onclick="openAddQuestion('{{ section.id }}')">+ Add Question</button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            <button class="btn-sm btn-primary-sm" style="margin-top:8px;" onclick="openAddSection()">+ Add Section</button>
+        </div>
+
+        <!-- Documents Tab -->
+        <div class="tab-content" id="tab-documents">
+            {% for t in templates %}
+            <div class="template-card">
+                <div class="template-info">
+                    <div class="template-name">
+                        {{ t.icon }} {{ t.name }}
+                        {% if t.is_default %}<span class="badge" style="font-size:11px;color:#999;background:#f0f0f0;padding:2px 8px;border-radius:50px;">default</span>{% endif %}
+                    </div>
+                    <div class="template-desc">{{ t.description }}</div>
+                    <div class="template-tags">
+                        {% for sid in t.linked_sections %}
+                            {% for section in sections %}
+                                {% if section.id == sid %}
+                                <span class="template-tag">{{ section.title }}</span>
+                                {% endif %}
+                            {% endfor %}
+                        {% endfor %}
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <label class="toggle">
+                        <input type="checkbox" {% if t.is_enabled %}checked{% endif %} onchange="toggleTemplateEnabled('{{ t.id }}', this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                    <button class="btn-sm btn-ghost" onclick="openEditTemplate('{{ t.id }}', {{ t|tojson }})">Edit</button>
+                    {% if not t.is_default %}
+                    <button class="btn-sm btn-danger-sm" onclick="deleteTemplate('{{ t.id }}')">&times;</button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+            <button class="btn-sm btn-primary-sm" style="margin-top:8px;" onclick="openAddTemplate()">+ Add Document Template</button>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Section Modal -->
+<div class="modal-overlay" id="modal-section">
+    <div class="modal">
+        <h3 id="modal-section-title">Add Section</h3>
+        <input type="hidden" id="section-edit-id">
+        <label>Section Title</label>
+        <input type="text" id="section-title-input" placeholder="e.g., Brand Assets">
+        <label>Description</label>
+        <textarea id="section-desc-input" placeholder="Help text shown to clients"></textarea>
+        <div class="modal-actions">
+            <button class="btn-sm btn-ghost" onclick="closeModal('modal-section')">Cancel</button>
+            <button class="btn-sm btn-primary-sm" onclick="saveSection()">Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Question Modal -->
+<div class="modal-overlay" id="modal-question">
+    <div class="modal">
+        <h3 id="modal-question-title">Add Question</h3>
+        <input type="hidden" id="question-edit-id">
+        <input type="hidden" id="question-section-id">
+        <label>Question Label</label>
+        <input type="text" id="question-label-input" placeholder="e.g., Company Size">
+        <label>Field Type</label>
+        <select id="question-type-input">
+            <option value="text">Text</option>
+            <option value="textarea">Long Text</option>
+            <option value="email">Email</option>
+            <option value="phone">Phone</option>
+            <option value="url">URL</option>
+            <option value="date">Date</option>
+            <option value="select">Dropdown</option>
+            <option value="multiselect">Multi-select</option>
+            <option value="checkbox">Checkbox</option>
+        </select>
+        <div id="options-group" style="display:none;">
+            <label>Options (one per line)</label>
+            <textarea id="question-options-input" placeholder="Option 1&#10;Option 2&#10;Option 3"></textarea>
+        </div>
+        <label>Placeholder</label>
+        <input type="text" id="question-placeholder-input" placeholder="Placeholder text...">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400;">
+            <input type="checkbox" id="question-required-input"> Required field
+        </label>
+        <div class="modal-actions">
+            <button class="btn-sm btn-ghost" onclick="closeModal('modal-question')">Cancel</button>
+            <button class="btn-sm btn-primary-sm" onclick="saveQuestion()">Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Template Modal -->
+<div class="modal-overlay" id="modal-template">
+    <div class="modal">
+        <h3 id="modal-template-title">Add Document Template</h3>
+        <input type="hidden" id="template-edit-id">
+        <label>Document Name</label>
+        <input type="text" id="template-name-input" placeholder="e.g., Growth Blueprint">
+        <label>Icon (emoji)</label>
+        <input type="text" id="template-icon-input" placeholder="e.g., &#128640;" style="width:80px;">
+        <label>Description (what this document should contain)</label>
+        <textarea id="template-desc-input" placeholder="Describe what the AI should generate..."></textarea>
+        <label>Linked Sections (which client answers feed into this doc)</label>
+        <div class="checkbox-grid" id="template-sections-grid">
+            {% for section in sections %}
+            <label><input type="checkbox" value="{{ section.id }}"> {{ section.title }}</label>
+            {% endfor %}
+        </div>
+        <div class="modal-actions">
+            <button class="btn-sm btn-ghost" onclick="closeModal('modal-template')">Cancel</button>
+            <button class="btn-sm btn-primary-sm" onclick="saveTemplate()">Save</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('tab-' + tab).classList.add('active');
+}
+
+function toggleSection(header) {
+    header.nextElementSibling.classList.toggle('open');
+}
+
+function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+}
+
+function openModal(id) {
+    document.getElementById(id).classList.add('open');
+}
+
+// Show/hide options field based on type
+document.getElementById('question-type-input').addEventListener('change', function() {
+    document.getElementById('options-group').style.display =
+        (this.value === 'select' || this.value === 'multiselect') ? 'block' : 'none';
+});
+
+// --- Section ---
+function openAddSection() {
+    document.getElementById('modal-section-title').textContent = 'Add Section';
+    document.getElementById('section-edit-id').value = '';
+    document.getElementById('section-title-input').value = '';
+    document.getElementById('section-desc-input').value = '';
+    openModal('modal-section');
+}
+
+async function saveSection() {
+    const editId = document.getElementById('section-edit-id').value;
+    const title = document.getElementById('section-title-input').value.trim();
+    const description = document.getElementById('section-desc-input').value.trim();
+    if (!title) return alert('Title is required');
+
+    const url = editId ? `/admin/api/sections/${editId}` : '/admin/api/sections';
+    const method = editId ? 'PUT' : 'POST';
+    await fetch(url, { method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify({title, description}) });
+    location.reload();
+}
+
+function toggleSectionEnabled(id, enabled) {
+    fetch(`/admin/api/sections/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({is_enabled: enabled ? 1 : 0}) });
+}
+
+// --- Question ---
+function openAddQuestion(sectionId) {
+    document.getElementById('modal-question-title').textContent = 'Add Question';
+    document.getElementById('question-edit-id').value = '';
+    document.getElementById('question-section-id').value = sectionId;
+    document.getElementById('question-label-input').value = '';
+    document.getElementById('question-type-input').value = 'text';
+    document.getElementById('question-options-input').value = '';
+    document.getElementById('question-placeholder-input').value = '';
+    document.getElementById('question-required-input').checked = false;
+    document.getElementById('options-group').style.display = 'none';
+    openModal('modal-question');
+}
+
+function openEditQuestion(id, q) {
+    document.getElementById('modal-question-title').textContent = 'Edit Question';
+    document.getElementById('question-edit-id').value = id;
+    document.getElementById('question-section-id').value = q.section_id;
+    document.getElementById('question-label-input').value = q.label;
+    document.getElementById('question-type-input').value = q.field_type;
+    const opts = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
+    document.getElementById('question-options-input').value = (opts || []).join('\n');
+    document.getElementById('question-placeholder-input').value = q.placeholder || '';
+    document.getElementById('question-required-input').checked = !!q.is_required;
+    document.getElementById('options-group').style.display =
+        (q.field_type === 'select' || q.field_type === 'multiselect') ? 'block' : 'none';
+    openModal('modal-question');
+}
+
+async function saveQuestion() {
+    const editId = document.getElementById('question-edit-id').value;
+    const sectionId = document.getElementById('question-section-id').value;
+    const label = document.getElementById('question-label-input').value.trim();
+    const fieldType = document.getElementById('question-type-input').value;
+    const placeholder = document.getElementById('question-placeholder-input').value.trim();
+    const isRequired = document.getElementById('question-required-input').checked;
+    const optionsText = document.getElementById('question-options-input').value.trim();
+    const options = optionsText ? optionsText.split('\n').map(s => s.trim()).filter(Boolean) : [];
+
+    if (!label) return alert('Label is required');
+
+    const body = { section_id: sectionId, label, field_type: fieldType, placeholder, is_required: isRequired, options };
+    const url = editId ? `/admin/api/questions/${editId}` : '/admin/api/questions';
+    const method = editId ? 'PUT' : 'POST';
+    await fetch(url, { method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
+    location.reload();
+}
+
+function toggleQuestionEnabled(id, enabled) {
+    fetch(`/admin/api/questions/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({is_enabled: enabled ? 1 : 0}) });
+}
+
+function deleteQuestion(id) {
+    if (!confirm('Delete this question?')) return;
+    fetch(`/admin/api/questions/${id}`, { method: 'DELETE' }).then(() => location.reload());
+}
+
+// --- Template ---
+function openAddTemplate() {
+    document.getElementById('modal-template-title').textContent = 'Add Document Template';
+    document.getElementById('template-edit-id').value = '';
+    document.getElementById('template-name-input').value = '';
+    document.getElementById('template-icon-input').value = '';
+    document.getElementById('template-desc-input').value = '';
+    document.querySelectorAll('#template-sections-grid input').forEach(cb => cb.checked = false);
+    openModal('modal-template');
+}
+
+function openEditTemplate(id, t) {
+    document.getElementById('modal-template-title').textContent = 'Edit Document Template';
+    document.getElementById('template-edit-id').value = id;
+    document.getElementById('template-name-input').value = t.name;
+    document.getElementById('template-icon-input').value = t.icon || '';
+    document.getElementById('template-desc-input').value = t.description || '';
+    const linked = t.linked_sections || [];
+    document.querySelectorAll('#template-sections-grid input').forEach(cb => {
+        cb.checked = linked.includes(cb.value);
+    });
+    openModal('modal-template');
+}
+
+async function saveTemplate() {
+    const editId = document.getElementById('template-edit-id').value;
+    const name = document.getElementById('template-name-input').value.trim();
+    const icon = document.getElementById('template-icon-input').value.trim();
+    const description = document.getElementById('template-desc-input').value.trim();
+    const sectionIds = [];
+    document.querySelectorAll('#template-sections-grid input:checked').forEach(cb => sectionIds.push(cb.value));
+
+    if (!name) return alert('Name is required');
+
+    const body = { name, icon, description, section_ids: sectionIds };
+    const url = editId ? `/admin/api/templates/${editId}` : '/admin/api/templates';
+    const method = editId ? 'PUT' : 'POST';
+    await fetch(url, { method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body) });
+    location.reload();
+}
+
+function toggleTemplateEnabled(id, enabled) {
+    fetch(`/admin/api/templates/${id}`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({is_enabled: enabled ? 1 : 0}) });
+}
+
+function deleteTemplate(id) {
+    if (!confirm('Delete this template?')) return;
+    fetch(`/admin/api/templates/${id}`, { method: 'DELETE' }).then(r => r.json()).then(d => {
+        if (d.error) alert(d.error);
+        else location.reload();
+    });
+}
+</script>
+</body>
+</html>

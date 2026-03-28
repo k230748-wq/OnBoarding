@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Copy Generator - {{ agency_name }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f5f7; color: #333; }
+
+        /* ── Top Bar ── */
+        .top-bar {
+            background: #fff; padding: 16px 32px; border-bottom: 1px solid #eee;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .top-bar .left { display: flex; align-items: center; gap: 14px; }
+        .top-bar .left h1 { font-size: 17px; font-weight: 700; color: #1a1a2e; }
+        .top-bar .left .separator { color: #ddd; font-size: 14px; }
+        .top-bar .left .agency-label { font-size: 13px; color: #999; }
+        .back-link {
+            font-size: 13px; color: #666; text-decoration: none;
+            padding: 8px 16px; border-radius: 8px; border: 1px solid #e0e0e0;
+            transition: all 0.15s;
+        }
+        .back-link:hover { border-color: #999; color: #333; }
+
+        .page-body { max-width: 960px; margin: 28px auto; padding: 0 24px; }
+
+        /* ── Generate Section ── */
+        .gen-card {
+            background: #fff; border-radius: 10px; border: 1px solid #eee;
+            padding: 24px; margin-bottom: 24px;
+        }
+        .gen-card h2 { font-size: 15px; font-weight: 600; color: #1a1a2e; margin-bottom: 4px; }
+        .gen-card .gen-subtitle { font-size: 13px; color: #999; margin-bottom: 14px; }
+        .gen-row {
+            display: flex; gap: 10px; align-items: center;
+        }
+        .gen-input {
+            flex: 1; padding: 10px 14px; border: 1px solid #e0e0e0; border-radius: 8px;
+            font-size: 14px; font-family: inherit; outline: none;
+        }
+        .gen-input:focus { border-color: #999; }
+        .gen-input::placeholder { color: #bbb; }
+        .gen-btn {
+            padding: 10px 22px; background: #1a1a2e; color: #fff; border: none;
+            border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer;
+            font-family: inherit; transition: all 0.15s; white-space: nowrap;
+        }
+        .gen-btn:hover { background: #2a2a4e; }
+        .gen-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* ── Loading ── */
+        .gen-loading {
+            background: #fff; border-radius: 10px; border: 1px solid #eee;
+            padding: 40px; text-align: center; margin-bottom: 24px; display: none;
+        }
+        .gen-loading.show { display: block; }
+        .gen-loading .spinner {
+            width: 32px; height: 32px; border: 3px solid #eee; border-top-color: #1a1a2e;
+            border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .gen-loading p { font-size: 14px; color: #999; }
+
+        /* ── Filter Bar ── */
+        .filter-bar {
+            display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
+        }
+        .filter-btn {
+            padding: 7px 16px; border-radius: 50px; font-size: 13px; font-weight: 500;
+            border: 1px solid #e0e0e0; background: #fff; color: #666; cursor: pointer;
+            font-family: inherit; transition: all 0.15s;
+        }
+        .filter-btn:hover { border-color: #999; color: #333; }
+        .filter-btn.active { background: #1a1a2e; color: #fff; border-color: #1a1a2e; }
+
+        /* ── Section Title ── */
+        .section-title {
+            font-size: 14px; font-weight: 600; color: #999; text-transform: uppercase;
+            letter-spacing: 0.5px; margin-bottom: 14px;
+        }
+
+        /* ── Copy Grid ── */
+        .copy-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+        }
+
+        /* ── Copy Card ── */
+        .copy-card {
+            background: #fff; border-radius: 10px; border: 1px solid #eee;
+            padding: 20px; display: flex; flex-direction: column; transition: border-color 0.15s;
+        }
+        .copy-card:hover { border-color: #ddd; }
+        .copy-card.hidden { display: none; }
+
+        .copy-card-header {
+            display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+        }
+        .platform-badge {
+            display: inline-block; padding: 3px 10px; border-radius: 4px;
+            font-size: 11px; font-weight: 600; color: #fff; letter-spacing: 0.3px;
+        }
+        .badge-instagram { background: #E1306C; }
+        .badge-linkedin { background: #0077B5; }
+        .badge-twitter { background: #1DA1F2; }
+        .badge-facebook { background: #4267B2; }
+        .content-type-label {
+            font-size: 12px; color: #999; font-weight: 500;
+        }
+
+        .copy-topic {
+            font-size: 12px; color: #bbb; margin-bottom: 8px; font-weight: 500;
+        }
+
+        .copy-text {
+            font-size: 14px; line-height: 1.7; color: #444; flex: 1;
+            white-space: pre-wrap; word-break: break-word; margin-bottom: 10px;
+        }
+
+        .copy-hashtags {
+            font-size: 13px; color: #aaa; line-height: 1.5; margin-bottom: 14px;
+            word-break: break-word;
+        }
+
+        .copy-actions {
+            display: flex; align-items: center; gap: 8px; border-top: 1px solid #f0f0f0;
+            padding-top: 12px;
+        }
+        .action-btn {
+            padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 500;
+            border: 1px solid #e0e0e0; color: #666; background: #fff; cursor: pointer;
+            font-family: inherit; transition: all 0.15s; display: inline-flex;
+            align-items: center; gap: 4px;
+        }
+        .action-btn:hover { border-color: #999; color: #333; }
+        .action-btn-del { color: #dc2626; border-color: #fecaca; }
+        .action-btn-del:hover { background: #fef2f2; border-color: #dc2626; }
+
+        .fav-btn { color: #999; }
+        .fav-btn:hover { color: #f59e0b; border-color: #fbbf24; }
+        .fav-btn.is-fav { color: #f59e0b; border-color: #fbbf24; background: #fffbeb; }
+
+        .copy-date {
+            margin-left: auto; font-size: 11px; color: #ccc;
+        }
+
+        /* ── Empty State ── */
+        .empty-state {
+            text-align: center; padding: 60px 20px; color: #999;
+            grid-column: 1 / -1;
+        }
+        .empty-state h3 { font-size: 16px; font-weight: 600; color: #1a1a2e; margin-bottom: 6px; }
+        .empty-state p { font-size: 14px; }
+
+        /* ── Toast ── */
+        .toast-msg {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: #1a1a2e; color: #fff; padding: 12px 24px; border-radius: 8px;
+            font-size: 14px; z-index: 400; display: none;
+        }
+        .toast-msg.show { display: block; }
+
+        /* ── Responsive ── */
+        @media (max-width: 700px) {
+            .top-bar { padding: 12px 16px; }
+            .page-body { padding: 0 16px; }
+            .copy-grid { grid-template-columns: 1fr; }
+            .gen-row { flex-direction: column; }
+            .gen-input { width: 100%; }
+            .gen-btn { width: 100%; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="top-bar">
+    <div class="left">
+        <h1>Social Copy Generator</h1>
+        <span class="separator">/</span>
+        <span class="agency-label">{{ agency_name }}</span>
+    </div>
+    <a href="/a/{{ slug }}/dashboard/{{ onboarding_id }}/tools" class="back-link">Back to Tools</a>
+</div>
+
+<div class="page-body">
+
+    <!-- Generate Section -->
+    <div class="gen-card">
+        <h2>Generate Social Copy</h2>
+        <p class="gen-subtitle">Enter a topic and generate copy for all platforms at once.</p>
+        <div class="gen-row">
+            <input type="text" class="gen-input" id="gen-topic" placeholder="e.g. Product launch announcement, Holiday sale, Brand story..." />
+            <button class="gen-btn" id="gen-btn" onclick="generateCopy()">Generate Copy</button>
+        </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="gen-loading" id="gen-loading">
+        <div class="spinner"></div>
+        <p>Generating social copy for all platforms...</p>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+        <button class="filter-btn active" data-platform="all" onclick="filterCopies('all', this)">All</button>
+        <button class="filter-btn" data-platform="instagram" onclick="filterCopies('instagram', this)">Instagram</button>
+        <button class="filter-btn" data-platform="linkedin" onclick="filterCopies('linkedin', this)">LinkedIn</button>
+        <button class="filter-btn" data-platform="twitter" onclick="filterCopies('twitter', this)">Twitter</button>
+        <button class="filter-btn" data-platform="facebook" onclick="filterCopies('facebook', this)">Facebook</button>
+    </div>
+
+    <!-- Section Title -->
+    <div class="section-title" id="section-title">
+        {% if copies %}Copy Library ({{ copies|length }}){% else %}Copy Library{% endif %}
+    </div>
+
+    <!-- Copy Grid -->
+    <div class="copy-grid" id="copy-grid">
+        {% if copies %}
+            {# Sort: favorites first, then by created_at desc #}
+            {% for copy in copies|sort(attribute='is_favorite', reverse=true) %}
+            <div class="copy-card" id="copy-{{ copy.id }}" data-platform="{{ copy.platform|lower }}" data-fav="{{ '1' if copy.is_favorite else '0' }}">
+                <div class="copy-card-header">
+                    <span class="platform-badge badge-{{ copy.platform|lower }}">{{ copy.platform }}</span>
+                    <span class="content-type-label">{{ copy.content_type }}</span>
+                </div>
+                <div class="copy-topic">{{ copy.topic }}</div>
+                <div class="copy-text">{{ copy.copy_text }}</div>
+                {% if copy.hashtags %}
+                <div class="copy-hashtags">{{ copy.hashtags }}</div>
+                {% endif %}
+                <div class="copy-actions">
+                    <button class="action-btn" onclick="copyToClipboard(this)" data-text="{{ copy.copy_text|e }}{% if copy.hashtags %} {{ copy.hashtags|e }}{% endif %}">Copy</button>
+                    <button class="action-btn fav-btn {{ 'is-fav' if copy.is_favorite }}" onclick="toggleFavorite('{{ copy.id }}', this)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="{{ 'currentColor' if copy.is_favorite else 'none' }}" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <span>{{ 'Favorited' if copy.is_favorite else 'Favorite' }}</span>
+                    </button>
+                    <button class="action-btn action-btn-del" onclick="deleteCopy('{{ copy.id }}')">Delete</button>
+                    <span class="copy-date">{{ copy.created_at[:10] }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state" id="empty-state">
+                <h3>No social copies yet</h3>
+                <p>Enter a topic above and generate your first set of social copy.</p>
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<div class="toast-msg" id="toast-msg"></div>
+
+<script>
+const BASE = '/a/{{ slug }}/dashboard/{{ onboarding_id }}';
+let activeFilter = 'all';
+
+function showToast(msg) {
+    const el = document.getElementById('toast-msg');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+/* ── Filter ── */
+function filterCopies(platform, btn) {
+    activeFilter = platform;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    const cards = document.querySelectorAll('.copy-card');
+    let visibleCount = 0;
+    cards.forEach(card => {
+        if (platform === 'all' || card.dataset.platform === platform) {
+            card.classList.remove('hidden');
+            visibleCount++;
+        } else {
+            card.classList.add('hidden');
+        }
+    });
+
+    // Toggle empty state
+    let emptyEl = document.getElementById('empty-state');
+    if (visibleCount === 0 && cards.length > 0) {
+        if (!emptyEl) {
+            emptyEl = document.createElement('div');
+            emptyEl.className = 'empty-state';
+            emptyEl.id = 'empty-state';
+            document.getElementById('copy-grid').appendChild(emptyEl);
+        }
+        emptyEl.innerHTML = '<h3>No copies for this platform</h3><p>Generate new copy or switch to a different filter.</p>';
+        emptyEl.style.display = '';
+    } else if (emptyEl && visibleCount > 0) {
+        emptyEl.style.display = 'none';
+    }
+}
+
+/* ── Generate ── */
+function generateCopy() {
+    const btn = document.getElementById('gen-btn');
+    const topic = document.getElementById('gen-topic').value.trim();
+    if (!topic) {
+        showToast('Please enter a topic.');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Generating...';
+    document.getElementById('gen-loading').classList.add('show');
+
+    fetch(BASE + '/copies/ai-generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic: topic })
+    })
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById('gen-loading').classList.remove('show');
+        btn.disabled = false;
+        btn.textContent = 'Generate Copy';
+
+        if (data.error) {
+            showToast(data.error);
+            return;
+        }
+
+        // Remove empty state
+        const emptyEl = document.getElementById('empty-state');
+        if (emptyEl) emptyEl.remove();
+
+        const grid = document.getElementById('copy-grid');
+        const newCopies = data.copies || [data];
+
+        newCopies.forEach(copy => {
+            const card = buildCopyCard(copy);
+            grid.insertBefore(card, grid.firstChild);
+        });
+
+        updateSectionCount();
+        document.getElementById('gen-topic').value = '';
+        showToast('Social copy generated successfully.');
+    })
+    .catch(() => {
+        document.getElementById('gen-loading').classList.remove('show');
+        btn.disabled = false;
+        btn.textContent = 'Generate Copy';
+        showToast('Failed to generate. Please try again.');
+    });
+}
+
+function buildCopyCard(copy) {
+    const card = document.createElement('div');
+    card.className = 'copy-card';
+    card.id = 'copy-' + copy.id;
+    card.dataset.platform = (copy.platform || '').toLowerCase();
+    card.dataset.fav = copy.is_favorite ? '1' : '0';
+
+    const platformLower = (copy.platform || '').toLowerCase();
+    const fullText = copy.copy_text + (copy.hashtags ? ' ' + copy.hashtags : '');
+
+    card.innerHTML = `
+        <div class="copy-card-header">
+            <span class="platform-badge badge-${escapeHtml(platformLower)}">${escapeHtml(copy.platform)}</span>
+            <span class="content-type-label">${escapeHtml(copy.content_type || '')}</span>
+        </div>
+        <div class="copy-topic">${escapeHtml(copy.topic || '')}</div>
+        <div class="copy-text">${escapeHtml(copy.copy_text || '')}</div>
+        ${copy.hashtags ? '<div class="copy-hashtags">' + escapeHtml(copy.hashtags) + '</div>' : ''}
+        <div class="copy-actions">
+            <button class="action-btn" onclick="copyToClipboard(this)" data-text="${escapeHtml(fullText)}">Copy</button>
+            <button class="action-btn fav-btn" onclick="toggleFavorite('${copy.id}', this)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                <span>Favorite</span>
+            </button>
+            <button class="action-btn action-btn-del" onclick="deleteCopy('${copy.id}')">Delete</button>
+            <span class="copy-date">${(copy.created_at || '').substring(0, 10)}</span>
+        </div>
+    `;
+
+    // Apply current filter
+    if (activeFilter !== 'all' && platformLower !== activeFilter) {
+        card.classList.add('hidden');
+    }
+
+    return card;
+}
+
+/* ── Copy to Clipboard ── */
+function copyToClipboard(btn) {
+    const text = btn.dataset.text;
+    navigator.clipboard.writeText(text).then(() => {
+        showToast('Copied!');
+    }).catch(() => {
+        showToast('Failed to copy.');
+    });
+}
+
+/* ── Favorite Toggle ── */
+function toggleFavorite(id, btn) {
+    fetch(BASE + '/copies/' + id + '/favorite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) {
+            showToast(data.error);
+            return;
+        }
+
+        const card = document.getElementById('copy-' + id);
+        const isFav = data.is_favorite;
+        card.dataset.fav = isFav ? '1' : '0';
+
+        const svg = btn.querySelector('svg');
+        const label = btn.querySelector('span');
+        if (isFav) {
+            btn.classList.add('is-fav');
+            svg.setAttribute('fill', 'currentColor');
+            label.textContent = 'Favorited';
+        } else {
+            btn.classList.remove('is-fav');
+            svg.setAttribute('fill', 'none');
+            label.textContent = 'Favorite';
+        }
+
+        // Re-sort: move favorites to top
+        reorderCards();
+        showToast(isFav ? 'Added to favorites.' : 'Removed from favorites.');
+    })
+    .catch(() => showToast('Failed to update favorite.'));
+}
+
+function reorderCards() {
+    const grid = document.getElementById('copy-grid');
+    const cards = Array.from(grid.querySelectorAll('.copy-card'));
+    cards.sort((a, b) => {
+        const aFav = parseInt(a.dataset.fav || '0');
+        const bFav = parseInt(b.dataset.fav || '0');
+        return bFav - aFav;
+    });
+    cards.forEach(card => grid.appendChild(card));
+}
+
+/* ── Delete ── */
+function deleteCopy(id) {
+    if (!confirm('Delete this copy?')) return;
+
+    fetch(BASE + '/copies/' + id, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) {
+            showToast(data.error);
+            return;
+        }
+
+        const el = document.getElementById('copy-' + id);
+        if (el) el.remove();
+
+        updateSectionCount();
+
+        const grid = document.getElementById('copy-grid');
+        const remaining = grid.querySelectorAll('.copy-card');
+        if (remaining.length === 0) {
+            const emptyEl = document.createElement('div');
+            emptyEl.className = 'empty-state';
+            emptyEl.id = 'empty-state';
+            emptyEl.innerHTML = '<h3>No social copies yet</h3><p>Enter a topic above and generate your first set of social copy.</p>';
+            grid.appendChild(emptyEl);
+        }
+
+        showToast('Copy deleted.');
+    })
+    .catch(() => showToast('Failed to delete.'));
+}
+
+function updateSectionCount() {
+    const count = document.querySelectorAll('.copy-card').length;
+    const title = document.getElementById('section-title');
+    title.textContent = count > 0 ? 'Copy Library (' + count + ')' : 'Copy Library';
+}
+
+/* ── Enter key shortcut ── */
+document.getElementById('gen-topic').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') generateCopy();
+});
+</script>
+</body>
+</html>

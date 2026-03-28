@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Onboarding Platform</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern-ui.css') }}">
+    <style>
+        body { background: #0a0a0f; color: #fff; overflow-x: hidden; }
+
+        .home-hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .home-card {
+            position: relative;
+            z-index: 2;
+            background: rgba(255,255,255,0.02);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 28px;
+            padding: 56px 48px;
+            max-width: 560px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 80px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06);
+            margin: 20px;
+        }
+
+        .home-card h1 {
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 14px;
+            background: linear-gradient(135deg, #fff, rgba(255,255,255,0.7));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .home-card p {
+            color: rgba(255,255,255,0.55);
+            font-size: 16px;
+            line-height: 1.7;
+            margin-bottom: 36px;
+        }
+
+        .home-actions { display: flex; flex-direction: column; gap: 12px; }
+
+        .home-actions .btn-shimmer { width: 100%; padding: 18px; font-size: 16px; border-radius: 14px; }
+
+        .home-actions .btn-glass {
+            width: 100%;
+            padding: 18px;
+            background: rgba(102,126,234,0.15);
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(102,126,234,0.4);
+            color: #fff;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: inherit;
+        }
+
+        .home-actions .btn-glass:hover {
+            background: rgba(102,126,234,0.25);
+            border-color: rgba(102,126,234,0.6);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(102,126,234,0.3);
+        }
+
+        .home-footer {
+            margin-top: 28px;
+            font-size: 13px;
+            color: rgba(255,255,255,0.3);
+        }
+
+        .particle-hero {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 1;
+            opacity: 0.7;
+        }
+
+        .particle-hero canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Subtle grid overlay */
+        .grid-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+
+        /* Gradient glow behind card */
+        .glow-spot {
+            position: absolute;
+            width: 500px; height: 500px;
+            border-radius: 50%;
+            filter: blur(100px);
+            z-index: 0;
+        }
+        .glow-spot.one { background: rgba(102,126,234,0.2); top: 20%; left: 10%; }
+        .glow-spot.two { background: rgba(118,75,162,0.15); bottom: 10%; right: 10%; }
+        .glow-spot.three { background: rgba(240,147,251,0.1); top: 60%; left: 50%; }
+
+        @media (max-width: 600px) {
+            .home-card { padding: 40px 28px; margin: 16px; }
+            .home-card h1 { font-size: 28px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="home-hero">
+        <!-- Background effects -->
+        <div class="grid-overlay"></div>
+        <div class="glow-spot one"></div>
+        <div class="glow-spot two"></div>
+        <div class="glow-spot three"></div>
+
+        <!-- Particle canvas background -->
+        <div class="particle-hero">
+            <canvas id="particle-canvas"></canvas>
+        </div>
+
+        <!-- Main card -->
+        <div class="home-card">
+            <h1>Client Onboarding<br>Platform</h1>
+            <p>Automate your agency's client onboarding. Create personalized intake forms, generate AI-powered documents, and manage everything from one dashboard.</p>
+            <div class="home-actions">
+                <a href="{{ url_for('login') }}" class="btn-shimmer">Login to Dashboard</a>
+                <a href="{{ url_for('register') }}" class="btn-glass">Register with Invite Code</a>
+            </div>
+            <div class="home-footer">Agency owners: use your invite code to get started</div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/particle-text.js') }}"></script>
+    <script>
+        const canvas = document.getElementById('particle-canvas');
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+
+        initParticleText(canvas, {
+            words: ['ONBOARD', 'AUTOMATE', 'GROW', 'IGNITE'],
+            pixelSteps: 8,
+            drawAsPoints: true,
+            cycleFrames: 200,
+            canvasWidth: 1200,
+            canvasHeight: 600,
+            colors: [
+                { r: 102, g: 126, b: 234 },
+                { r: 118, g: 75, b: 162 },
+                { r: 240, g: 147, b: 251 },
+                { r: 255, g: 107, b: 107 },
+            ],
+        });
+    </script>
+</body>
+</html>

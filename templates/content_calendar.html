@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Calendar - {{ agency_name }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f4f5f7; color: #333; min-height: 100vh; }
+
+        /* ── Top Bar ── */
+        .top-bar {
+            background: #fff; padding: 0 32px; height: 56px; border-bottom: 1px solid #e1e4e8;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .tb-left { display: flex; align-items: center; gap: 12px; }
+        .tb-left h1 { font-size: 16px; font-weight: 700; color: #1a1a2e; letter-spacing: -0.3px; }
+        .tb-left .separator { width: 1px; height: 20px; background: #e1e4e8; }
+        .tb-left .agency { font-size: 13px; color: #8b949e; }
+        .tb-actions { display: flex; gap: 8px; align-items: center; }
+        .btn {
+            padding: 7px 14px; border-radius: 6px; font-size: 13px; font-weight: 500;
+            border: 1px solid #d0d7de; background: #fff; color: #24292f; cursor: pointer;
+            font-family: inherit; transition: all 0.12s; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+        }
+        .btn:hover { background: #f6f8fa; border-color: #bbb; }
+        .btn-primary { background: #1a1a2e; color: #fff; border-color: #1a1a2e; }
+        .btn-primary:hover { background: #2d2d4e; }
+        .btn-green { background: #2da44e; color: #fff; border-color: #2da44e; }
+        .btn-green:hover { background: #218838; }
+        .btn svg { width: 14px; height: 14px; }
+
+        /* ── Calendar Controls ── */
+        .cal-controls {
+            background: #fff; border-bottom: 1px solid #e1e4e8;
+            padding: 12px 32px; display: flex; align-items: center; justify-content: space-between;
+        }
+        .cc-left { display: flex; align-items: center; gap: 12px; }
+        .cc-nav { display: flex; align-items: center; border: 1px solid #d0d7de; border-radius: 6px; overflow: hidden; }
+        .cc-nav button {
+            width: 32px; height: 32px; border: none; background: #fff; cursor: pointer;
+            color: #57606a; font-size: 16px; transition: all 0.12s;
+        }
+        .cc-nav button:hover { background: #f6f8fa; }
+        .cc-nav button:first-child { border-right: 1px solid #d0d7de; }
+        .cc-nav button:last-child { border-left: 1px solid #d0d7de; }
+        .cc-nav .cc-month {
+            padding: 0 16px; font-size: 14px; font-weight: 600; color: #24292f; min-width: 160px; text-align: center;
+        }
+        .cc-today {
+            padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 600;
+            border: 1px solid #d0d7de; background: #fff; cursor: pointer; color: #57606a;
+        }
+        .cc-today:hover { background: #f6f8fa; }
+        .cc-right { display: flex; gap: 16px; align-items: center; }
+        .cc-stat { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #57606a; }
+        .cc-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+        /* ── Platform Legend ── */
+        .legend-bar {
+            background: #fff; border-bottom: 1px solid #e1e4e8;
+            padding: 8px 32px; display: flex; gap: 16px; align-items: center;
+        }
+        .legend-bar span { font-size: 11px; color: #8b949e; font-weight: 500; }
+        .lg-item { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #57606a; }
+        .lg-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+        /* ── Calendar Grid ── */
+        .cal-wrapper { padding: 20px 32px 32px; }
+        .cal-grid {
+            display: grid; grid-template-columns: repeat(7, 1fr);
+            background: #fff; border-radius: 8px; border: 1px solid #d0d7de;
+            overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .cal-day-header {
+            padding: 8px 10px; font-size: 11px; font-weight: 600; color: #8b949e;
+            text-transform: uppercase; letter-spacing: 0.5px; background: #f6f8fa;
+            border-bottom: 1px solid #d0d7de; text-align: left;
+        }
+        .cal-day {
+            min-height: 130px; padding: 8px; border-right: 1px solid #eaeef2;
+            border-bottom: 1px solid #eaeef2; position: relative;
+            transition: background 0.1s; vertical-align: top;
+        }
+        .cal-day:nth-child(7n+7) { border-right: none; }
+        .cal-day:hover { background: #f6f8fa; }
+        .cal-day.outside { background: #fafbfc; }
+        .cal-day.outside .dn { color: #c9d1d9; }
+        .cal-day.is-today { background: #f0f7ff; }
+        .cal-day.is-today .dn {
+            background: #0969da; color: #fff; width: 22px; height: 22px;
+            border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+        }
+        .dn { font-size: 12px; font-weight: 500; color: #57606a; margin-bottom: 4px; display: inline-block; }
+
+        .day-add-btn {
+            position: absolute; top: 6px; right: 6px; width: 18px; height: 18px;
+            border-radius: 4px; border: 1px solid transparent; background: transparent;
+            color: #c9d1d9; cursor: pointer; font-size: 14px; line-height: 1;
+            display: flex; align-items: center; justify-content: center; opacity: 0; transition: all 0.12s;
+        }
+        .cal-day:hover .day-add-btn { opacity: 1; }
+        .day-add-btn:hover { background: #dafbe1; color: #2da44e; border-color: #2da44e; }
+
+        /* ── Post Chips ── */
+        .chip {
+            display: flex; align-items: center; gap: 5px;
+            padding: 3px 7px; border-radius: 4px; margin-bottom: 3px;
+            font-size: 11px; cursor: pointer; transition: all 0.12s;
+            border-left: 3px solid; background: #f6f8fa;
+        }
+        .chip:hover { background: #eef1f5; }
+        .chip .chip-title { font-weight: 600; color: #24292f; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+        .chip .chip-time { font-size: 10px; color: #8b949e; white-space: nowrap; }
+        .chip .chip-status {
+            width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+        }
+        .chip-status-draft { background: #d0d7de; }
+        .chip-status-scheduled { background: #3b82f6; }
+        .chip-status-published { background: #2da44e; }
+        .day-overflow { font-size: 10px; color: #8b949e; padding: 2px 4px; cursor: pointer; font-weight: 500; }
+        .day-overflow:hover { color: #0969da; }
+
+        /* ── Modal ── */
+        .modal-bg {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 300;
+            display: none; align-items: flex-start; justify-content: center; padding-top: 60px;
+            backdrop-filter: blur(2px);
+        }
+        .modal-bg.open { display: flex; }
+        .modal {
+            background: #fff; border-radius: 12px; width: 560px; max-width: 95vw;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.2); overflow: hidden;
+            max-height: 85vh; overflow-y: auto;
+        }
+        .m-head {
+            padding: 18px 24px; border-bottom: 1px solid #e1e4e8;
+            display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; background: #fff; z-index: 1;
+        }
+        .m-head h3 { font-size: 16px; font-weight: 600; color: #24292f; }
+        .m-head .x-btn { background: none; border: none; font-size: 20px; color: #8b949e; cursor: pointer; padding: 4px; border-radius: 4px; }
+        .m-head .x-btn:hover { background: #f6f8fa; color: #24292f; }
+        .m-body { padding: 20px 24px; }
+        .fg { margin-bottom: 16px; }
+        .fg label { display: block; font-size: 12px; font-weight: 600; color: #57606a; margin-bottom: 5px; }
+        .fg input, .fg select, .fg textarea {
+            width: 100%; padding: 8px 12px; border: 1px solid #d0d7de; border-radius: 6px;
+            font-size: 14px; font-family: inherit; outline: none; background: #fff;
+            transition: border 0.12s;
+        }
+        .fg input:focus, .fg select:focus, .fg textarea:focus { border-color: #0969da; box-shadow: 0 0 0 3px rgba(9,105,218,0.1); }
+        .fg textarea { resize: vertical; min-height: 72px; }
+        .fg-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .fg-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+        .fg-hint { font-size: 11px; color: #8b949e; margin-top: 4px; }
+
+        .status-row { display: flex; gap: 8px; }
+        .st-pill {
+            padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 600;
+            cursor: pointer; transition: all 0.12s; border: 2px solid transparent;
+        }
+        .st-draft { background: #f6f8fa; color: #57606a; }
+        .st-draft.on { border-color: #57606a; }
+        .st-scheduled { background: #ddf4ff; color: #0969da; }
+        .st-scheduled.on { border-color: #0969da; }
+        .st-published { background: #dafbe1; color: #1a7f37; }
+        .st-published.on { border-color: #1a7f37; }
+
+        .m-foot {
+            padding: 14px 24px; border-top: 1px solid #e1e4e8;
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; bottom: 0; background: #fff;
+        }
+        .btn-danger { color: #cf222e; border-color: #ffcecb; }
+        .btn-danger:hover { background: #ffebe9; border-color: #cf222e; }
+
+        /* Section dividers in modal */
+        .m-section { font-size: 11px; font-weight: 600; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; margin: 20px 0 12px; padding-top: 16px; border-top: 1px solid #eaeef2; }
+        .m-section:first-of-type { margin-top: 4px; border-top: none; padding-top: 0; }
+
+        /* ── Toast ── */
+        .toast {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+            background: #24292f; color: #fff; padding: 10px 20px; border-radius: 8px;
+            font-size: 13px; font-weight: 500; z-index: 500; display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .toast.show { display: block; }
+
+        @media (max-width: 900px) {
+            .cal-day { min-height: 90px; padding: 4px; }
+            .chip { font-size: 10px; padding: 2px 5px; }
+            .top-bar, .cal-controls, .legend-bar, .cal-wrapper { padding-left: 16px; padding-right: 16px; }
+            .cc-right { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Top Bar -->
+<div class="top-bar">
+    <div class="tb-left">
+        <h1>Content Calendar</h1>
+        <div class="separator"></div>
+        <span class="agency">{{ agency_name }}</span>
+    </div>
+    <div class="tb-actions">
+        <button class="btn btn-green" onclick="aiGenerate(event)">
+            <svg viewBox="0 0 16 16" fill="currentColor"><path d="M7.998 0a8 8 0 1 0 0 16 8 8 0 0 0 0-16ZM1.5 8a6.5 6.5 0 1 1 13 0 6.5 6.5 0 0 1-13 0Z"/><path d="M8 3.5a.75.75 0 0 1 .75.75v3h3a.75.75 0 0 1 0 1.5h-3v3a.75.75 0 0 1-1.5 0v-3h-3a.75.75 0 0 1 0-1.5h3v-3A.75.75 0 0 1 8 3.5Z"/></svg>
+            AI Auto-Fill Week
+        </button>
+        <button class="btn btn-primary" onclick="openModal()">+ New Post</button>
+        <a href="/a/{{ slug }}/dashboard/{{ onboarding_id }}/tools" class="btn">Back</a>
+    </div>
+</div>
+
+<!-- Controls -->
+<div class="cal-controls">
+    <div class="cc-left">
+        <div class="cc-nav">
+            <button onclick="changeMonth(-1)">&#8249;</button>
+            <div class="cc-month" id="cal-title"></div>
+            <button onclick="changeMonth(1)">&#8250;</button>
+        </div>
+        <button class="cc-today" onclick="goToday()">Today</button>
+    </div>
+    <div class="cc-right">
+        <div class="cc-stat"><div class="cc-dot" style="background:#d0d7de;"></div><span id="stat-draft">0</span> Draft</div>
+        <div class="cc-stat"><div class="cc-dot" style="background:#3b82f6;"></div><span id="stat-scheduled">0</span> Scheduled</div>
+        <div class="cc-stat"><div class="cc-dot" style="background:#2da44e;"></div><span id="stat-published">0</span> Published</div>
+        <div class="cc-stat" style="font-weight:600;color:#24292f;"><span id="stat-total">0</span> Total</div>
+    </div>
+</div>
+
+<!-- Legend -->
+<div class="legend-bar">
+    <span>Platforms:</span>
+    <div class="lg-item"><div class="lg-dot" style="background:#E1306C;"></div>Instagram</div>
+    <div class="lg-item"><div class="lg-dot" style="background:#0077B5;"></div>LinkedIn</div>
+    <div class="lg-item"><div class="lg-dot" style="background:#1DA1F2;"></div>Twitter/X</div>
+    <div class="lg-item"><div class="lg-dot" style="background:#4267B2;"></div>Facebook</div>
+    <div class="lg-item"><div class="lg-dot" style="background:#111;"></div>TikTok</div>
+    <div class="lg-item"><div class="lg-dot" style="background:#FF0000;"></div>YouTube</div>
+</div>
+
+<!-- Calendar -->
+<div class="cal-wrapper">
+    <div class="cal-grid" id="cal-grid"></div>
+</div>
+
+<!-- Post Modal -->
+<div class="modal-bg" id="post-modal">
+    <div class="modal">
+        <div class="m-head">
+            <h3 id="modal-title">New Post</h3>
+            <button class="x-btn" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="m-body">
+            <div class="m-section">Scheduling</div>
+            <div class="fg-row-3">
+                <div class="fg">
+                    <label>Date</label>
+                    <input type="date" id="f-date">
+                </div>
+                <div class="fg">
+                    <label>Time</label>
+                    <select id="f-time">
+                        <option value="">No time set</option>
+                        <option value="6:00 AM">6:00 AM</option>
+                        <option value="7:00 AM">7:00 AM</option>
+                        <option value="8:00 AM">8:00 AM</option>
+                        <option value="9:00 AM">9:00 AM</option>
+                        <option value="10:00 AM">10:00 AM</option>
+                        <option value="11:00 AM">11:00 AM</option>
+                        <option value="12:00 PM">12:00 PM</option>
+                        <option value="1:00 PM">1:00 PM</option>
+                        <option value="2:00 PM">2:00 PM</option>
+                        <option value="3:00 PM">3:00 PM</option>
+                        <option value="4:00 PM">4:00 PM</option>
+                        <option value="5:00 PM">5:00 PM</option>
+                        <option value="6:00 PM">6:00 PM</option>
+                        <option value="7:00 PM">7:00 PM</option>
+                        <option value="8:00 PM">8:00 PM</option>
+                        <option value="9:00 PM">9:00 PM</option>
+                    </select>
+                </div>
+                <div class="fg">
+                    <label>Platform</label>
+                    <select id="f-platform">
+                        <option value="Instagram">Instagram</option>
+                        <option value="LinkedIn">LinkedIn</option>
+                        <option value="Twitter">Twitter/X</option>
+                        <option value="Facebook">Facebook</option>
+                        <option value="TikTok">TikTok</option>
+                        <option value="YouTube">YouTube</option>
+                    </select>
+                </div>
+            </div>
+            <div class="fg-row">
+                <div class="fg">
+                    <label>Content Type</label>
+                    <select id="f-type">
+                        <option value="Post">Post</option>
+                        <option value="Reel">Reel / Short</option>
+                        <option value="Story">Story</option>
+                        <option value="Carousel">Carousel</option>
+                        <option value="Video">Video</option>
+                        <option value="Article">Article</option>
+                        <option value="Poll">Poll</option>
+                        <option value="Live">Live</option>
+                        <option value="Thread">Thread</option>
+                    </select>
+                </div>
+                <div class="fg">
+                    <label>Status</label>
+                    <div class="status-row" style="margin-top:2px;">
+                        <div class="st-pill st-draft on" data-status="draft" onclick="setStatus('draft')">Draft</div>
+                        <div class="st-pill st-scheduled" data-status="scheduled" onclick="setStatus('scheduled')">Scheduled</div>
+                        <div class="st-pill st-published" data-status="published" onclick="setStatus('published')">Published</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="m-section">Content</div>
+            <div class="fg">
+                <label>Title</label>
+                <input type="text" id="f-title" placeholder="e.g. Behind the Scenes Monday">
+            </div>
+            <div class="fg">
+                <label>Idea / Concept</label>
+                <input type="text" id="f-idea" placeholder="e.g. Show the team brainstorming session">
+            </div>
+            <div class="fg">
+                <label>Description</label>
+                <textarea id="f-desc" placeholder="Detailed description of what this post should cover, the angle, key points to hit..."></textarea>
+            </div>
+            <div class="fg">
+                <label>Caption (ready to post)</label>
+                <textarea id="f-caption" placeholder="The actual caption/copy that will be posted..."></textarea>
+            </div>
+            <div class="fg-row">
+                <div class="fg">
+                    <label>Hashtags</label>
+                    <input type="text" id="f-hashtags" placeholder="#branding #marketing #growth">
+                </div>
+                <div class="fg">
+                    <label>Media / Visual Notes</label>
+                    <input type="text" id="f-media" placeholder="e.g. Use brand colors, product photo">
+                </div>
+            </div>
+        </div>
+        <div class="m-foot">
+            <div>
+                <button class="btn btn-danger" id="del-btn" onclick="deletePost()" style="display:none;">Delete Post</button>
+            </div>
+            <div style="display:flex;gap:8px;">
+                <button class="btn" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" id="save-btn" onclick="savePost()">Save Post</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const BASE = '/a/{{ slug }}/dashboard/{{ onboarding_id }}/calendar';
+const PC = { Instagram:'#E1306C', LinkedIn:'#0077B5', Twitter:'#1DA1F2', Facebook:'#4267B2', TikTok:'#111', YouTube:'#FF0000' };
+const MO = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+let cY = {{ year }}, cM = {{ month }};
+let posts = {{ posts | tojson }};
+let editId = null, selStatus = 'draft';
+
+function toast(m) { const e=document.getElementById('toast'); e.textContent=m; e.classList.add('show'); setTimeout(()=>e.classList.remove('show'),3000); }
+
+function render() {
+    const g = document.getElementById('cal-grid');
+    g.innerHTML = '';
+    ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(d => {
+        const h = document.createElement('div'); h.className='cal-day-header'; h.textContent=d; g.appendChild(h);
+    });
+    document.getElementById('cal-title').textContent = `${MO[cM-1]} ${cY}`;
+
+    // Monday-start: adjust first day
+    let firstDay = new Date(cY, cM-1, 1).getDay();
+    firstDay = firstDay === 0 ? 6 : firstDay - 1; // Mon=0
+    const dim = new Date(cY, cM, 0).getDate();
+    const prevDim = new Date(cY, cM-1, 0).getDate();
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+
+    // Prev month
+    for (let i = firstDay-1; i >= 0; i--) mkCell(prevDim-i, true, '', false, g);
+    // This month
+    for (let d=1; d<=dim; d++) {
+        const ds = `${cY}-${String(cM).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        mkCell(d, false, ds, ds===todayStr, g);
+    }
+    // Next month
+    const total = g.children.length - 7;
+    const rem = total % 7 === 0 ? 0 : 7 - (total % 7);
+    for (let d=1; d<=rem; d++) mkCell(d, true, '', false, g);
+
+    // Stats
+    document.getElementById('stat-total').textContent = posts.length;
+    document.getElementById('stat-draft').textContent = posts.filter(p=>p.status==='draft').length;
+    document.getElementById('stat-scheduled').textContent = posts.filter(p=>p.status==='scheduled').length;
+    document.getElementById('stat-published').textContent = posts.filter(p=>p.status==='published').length;
+}
+
+function mkCell(num, out, ds, today, grid) {
+    const c = document.createElement('div');
+    c.className = 'cal-day' + (out?' outside':'') + (today?' is-today':'');
+    const n = document.createElement('div'); n.className='dn'; n.textContent=num; c.appendChild(n);
+
+    if (!out && ds) {
+        const ab = document.createElement('button'); ab.className='day-add-btn'; ab.textContent='+';
+        ab.onclick = e => { e.stopPropagation(); openModal(ds); }; c.appendChild(ab);
+
+        const dp = posts.filter(p => p.post_date === ds);
+        dp.slice(0,4).forEach(p => {
+            const ch = document.createElement('div'); ch.className='chip';
+            ch.style.borderLeftColor = PC[p.platform]||'#667eea';
+            const title = p.title || p.content_type || p.platform;
+            ch.innerHTML = `
+                <span class="chip-status chip-status-${p.status}"></span>
+                <span class="chip-title">${esc(title)}</span>
+                ${p.post_time ? `<span class="chip-time">${esc(p.post_time)}</span>` : ''}
+            `;
+            ch.title = `${p.platform} - ${p.content_type}\n${p.caption||''}`;
+            ch.onclick = e => { e.stopPropagation(); openModal(ds, p); };
+            c.appendChild(ch);
+        });
+        if (dp.length > 4) {
+            const ov = document.createElement('div'); ov.className='day-overflow';
+            ov.textContent = `+${dp.length-4} more`; c.appendChild(ov);
+        }
+        c.onclick = () => openModal(ds);
+    }
+    grid.appendChild(c);
+}
+
+function changeMonth(d) { cM+=d; if(cM>12){cM=1;cY++;} if(cM<1){cM=12;cY--;} fetchPosts(); }
+function goToday() { const t=new Date(); cY=t.getFullYear(); cM=t.getMonth()+1; fetchPosts(); }
+function fetchPosts() { fetch(`${BASE}/posts?year=${cY}&month=${cM}`).then(r=>r.json()).then(d=>{posts=d.posts;render();}); }
+
+function openModal(ds, p) {
+    editId = p ? p.id : null;
+    document.getElementById('modal-title').textContent = p ? 'Edit Post' : 'New Post';
+    document.getElementById('f-date').value = ds || '';
+    document.getElementById('f-time').value = p ? (p.post_time||'') : '';
+    document.getElementById('f-platform').value = p ? p.platform : 'Instagram';
+    document.getElementById('f-type').value = p ? (p.content_type||'Post') : 'Post';
+    document.getElementById('f-title').value = p ? (p.title||'') : '';
+    document.getElementById('f-idea').value = p ? (p.idea||'') : '';
+    document.getElementById('f-desc').value = p ? (p.description||'') : '';
+    document.getElementById('f-caption').value = p ? (p.caption||'') : '';
+    document.getElementById('f-hashtags').value = p ? (p.hashtags||'') : '';
+    document.getElementById('f-media').value = p ? (p.media_notes||'') : '';
+    selStatus = p ? p.status : 'draft';
+    updPills();
+    document.getElementById('del-btn').style.display = p ? 'inline-flex' : 'none';
+    document.getElementById('save-btn').textContent = p ? 'Update' : 'Save Post';
+    document.getElementById('post-modal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('post-modal').classList.remove('open'); editId=null; }
+function setStatus(s) { selStatus=s; updPills(); }
+function updPills() { document.querySelectorAll('.st-pill').forEach(p=>p.classList.toggle('on',p.dataset.status===selStatus)); }
+
+function savePost() {
+    const d = {
+        post_date: document.getElementById('f-date').value,
+        post_time: document.getElementById('f-time').value,
+        platform: document.getElementById('f-platform').value,
+        content_type: document.getElementById('f-type').value,
+        title: document.getElementById('f-title').value,
+        idea: document.getElementById('f-idea').value,
+        description: document.getElementById('f-desc').value,
+        caption: document.getElementById('f-caption').value,
+        hashtags: document.getElementById('f-hashtags').value,
+        media_notes: document.getElementById('f-media').value,
+        status: selStatus,
+        color: PC[document.getElementById('f-platform').value]||'#667eea',
+    };
+    if (!d.post_date||!d.platform) { toast('Date and platform required.'); return; }
+
+    const btn = document.getElementById('save-btn');
+    btn.disabled=true; btn.textContent='Saving...';
+
+    fetch(editId?`${BASE}/posts/${editId}`:`${BASE}/posts`, {
+        method: editId?'PUT':'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d)
+    }).then(r=>r.json()).then(res=>{
+        btn.disabled=false; btn.textContent=editId?'Update':'Save Post';
+        if(res.success){
+            if(editId){const i=posts.findIndex(p=>p.id===editId);if(i>=0)posts[i]=res.post;}
+            else posts.push(res.post);
+            render(); closeModal(); toast(editId?'Post updated.':'Post created.');
+        } else toast(res.error||'Failed.');
+    }).catch(()=>{ btn.disabled=false; btn.textContent=editId?'Update':'Save Post'; toast('Error.'); });
+}
+
+function deletePost() {
+    if(!editId||!confirm('Delete this post?'))return;
+    fetch(`${BASE}/posts/${editId}`,{method:'DELETE'}).then(r=>r.json()).then(res=>{
+        if(res.success){posts=posts.filter(p=>p.id!==editId);render();closeModal();toast('Deleted.');}
+    });
+}
+
+function aiGenerate(evt) {
+    const d=new Date(cY,cM-1,1), now=new Date(), start=d>now?d:now;
+    const day=start.getDay(), diff=day===0?1:(day===1?0:8-day);
+    start.setDate(start.getDate()+diff);
+    const ws=`${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}-${String(start.getDate()).padStart(2,'0')}`;
+    const btn=evt.currentTarget; btn.disabled=true; btn.innerHTML='Generating...';
+    fetch(`${BASE}/ai-generate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({week_start:ws})})
+    .then(r=>r.json()).then(res=>{
+        btn.disabled=false; btn.innerHTML='<svg viewBox="0 0 16 16" fill="currentColor" width="14" height="14"><path d="M7.998 0a8 8 0 1 0 0 16 8 8 0 0 0 0-16ZM1.5 8a6.5 6.5 0 1 1 13 0 6.5 6.5 0 0 1-13 0Z"/><path d="M8 3.5a.75.75 0 0 1 .75.75v3h3a.75.75 0 0 1 0 1.5h-3v3a.75.75 0 0 1-1.5 0v-3h-3a.75.75 0 0 1 0-1.5h3v-3A.75.75 0 0 1 8 3.5Z"/></svg> AI Auto-Fill Week';
+        if(res.success){posts=posts.concat(res.posts);render();toast(`Added ${res.count} posts.`);}
+        else toast(res.error||'Failed.');
+    }).catch(()=>{btn.disabled=false;btn.textContent='AI Auto-Fill Week';toast('Failed.');});
+}
+
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+
+document.getElementById('post-modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+render();
+</script>
+</body>
+</html>

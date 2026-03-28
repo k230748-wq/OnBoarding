@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - {{ data.full_name }} | {{ agency_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern-ui.css') }}">
+    <style>
+        body { background: #f8f8fb; margin: 0; }
+
+        .dash-bar {
+            background: #fff; border-bottom: 1px solid #eee;
+            padding: 20px 32px; display: flex; align-items: center; justify-content: space-between;
+        }
+        .dash-bar .db-left h1 { font-size: 18px; font-weight: 700; color: #1a1a2e; margin: 0; }
+        .dash-bar .db-left p { font-size: 13px; color: #999; margin: 4px 0 0; }
+        .dash-bar .db-right { display: flex; align-items: center; gap: 12px; }
+        .db-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 5px 12px; border-radius: 50px; font-size: 12px; font-weight: 600;
+        }
+        .db-badge-completed { background: #ecfdf5; color: #059669; }
+        .db-badge-processing { background: #fffbeb; color: #d97706; }
+        .db-badge-failed { background: #fef2f2; color: #dc2626; }
+        .db-badge .dot { width: 6px; height: 6px; border-radius: 50%; }
+        .db-badge-completed .dot { background: #059669; }
+        .db-badge-processing .dot { background: #d97706; }
+        .db-badge-failed .dot { background: #dc2626; }
+        .db-id { font-family: 'SF Mono', monospace; font-size: 12px; color: #bbb; }
+
+        .tab-bar {
+            display: flex; gap: 0; background: #fff; border-bottom: 1px solid #eee;
+            padding: 0 32px;
+        }
+        .tab-bar a {
+            padding: 14px 20px; font-size: 14px; font-weight: 500; color: #999;
+            text-decoration: none; border-bottom: 2px solid transparent; margin-bottom: -1px;
+            transition: all 0.15s;
+        }
+        .tab-bar a:hover { color: #333; }
+        .tab-bar a.active { color: #1a1a2e; border-bottom-color: #1a1a2e; font-weight: 600; }
+
+        .dash-content { max-width: 880px; margin: 28px auto; padding: 0 24px; }
+
+        /* ── Cards ── */
+        .card { background: #fff; border-radius: 10px; border: 1px solid #eee; margin-bottom: 16px; }
+        .card-header { padding: 16px 24px; font-size: 14px; font-weight: 600; color: #1a1a2e; border-bottom: 1px solid #f0f0f0; }
+        .card-body { padding: 16px 24px; }
+
+        .row { display: flex; justify-content: space-between; padding: 10px 0; font-size: 14px; }
+        .row:not(:last-child) { border-bottom: 1px solid #f8f8f8; }
+        .row .label { color: #999; }
+        .row .value { font-weight: 500; color: #333; text-align: right; }
+        .row .value a { color: {% if agency %}{{ agency.primary_color }}{% else %}#667eea{% endif %}; text-decoration: none; }
+
+        /* ── Stats ── */
+        .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 16px; }
+        .stat { background: #fff; border-radius: 10px; border: 1px solid #eee; padding: 20px; text-align: center; }
+        .stat .sv { font-size: 28px; font-weight: 800; color: #1a1a2e; }
+        .stat .sl { font-size: 12px; color: #999; margin-top: 2px; }
+
+        /* ── Documents grid ── */
+        .doc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+        .doc-card {
+            background: #fff; border-radius: 10px; border: 1px solid #eee;
+            padding: 24px; text-decoration: none; color: inherit; transition: all 0.15s;
+            display: block; position: relative;
+        }
+        .doc-card:hover { border-color: #ddd; }
+        .doc-card .dc-title { font-size: 15px; font-weight: 600; color: #1a1a2e; margin-bottom: 6px; }
+        .doc-card .dc-desc { font-size: 13px; color: #999; line-height: 1.5; }
+        .doc-card .dc-badge {
+            position: absolute; top: 14px; right: 14px;
+            font-size: 11px; padding: 3px 10px; border-radius: 50px; font-weight: 600;
+        }
+        .dc-badge.read { background: #ecfdf5; color: #059669; }
+        .dc-badge.unread { background: #f5f5fa; color: #667eea; }
+
+        /* ── Tools ── */
+        .tools-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+        .tool-card {
+            background: #fff; border-radius: 10px; border: 1px solid #eee;
+            padding: 24px; transition: all 0.15s;
+        }
+        .tool-card:hover { border-color: #ddd; }
+        .tool-card .tc-icon { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; font-size: 14px; font-weight: 700; }
+        .tool-card .tc-title { font-size: 15px; font-weight: 600; color: #1a1a2e; margin-bottom: 4px; }
+        .tool-card .tc-desc { font-size: 13px; color: #999; line-height: 1.5; margin-bottom: 14px; }
+        .tool-card .tc-btn {
+            display: inline-block; padding: 8px 16px; background: #f5f5fa; color: #333;
+            border-radius: 6px; font-size: 13px; font-weight: 500; text-decoration: none;
+            border: none; cursor: pointer; font-family: inherit; transition: all 0.15s;
+        }
+        .tool-card .tc-btn:hover { background: #eee; }
+
+        /* ── Checklist ── */
+        .checklist { list-style: none; padding: 0; margin: 0; }
+        .checklist li {
+            display: flex; align-items: center; gap: 10px;
+            padding: 12px 0; border-bottom: 1px solid #f5f5f5; font-size: 14px; color: #333;
+        }
+        .checklist li:last-child { border-bottom: none; }
+        .checklist input[type="checkbox"] { width: 16px; height: 16px; accent-color: #059669; }
+
+        /* ── Chatbot ── */
+        .chat-toggle {
+            position: fixed; bottom: 24px; right: 24px;
+            width: 52px; height: 52px; border-radius: 50%;
+            background: #1a1a2e; color: #fff; border: none; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15); z-index: 200;
+            transition: all 0.15s; font-size: 20px;
+        }
+        .chat-toggle:hover { background: #2a2a4e; }
+
+        .chat-panel {
+            position: fixed; bottom: 88px; right: 24px;
+            width: 380px; max-height: 520px;
+            background: #fff; border-radius: 12px; border: 1px solid #eee;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+            display: none; flex-direction: column; z-index: 200;
+            overflow: hidden;
+        }
+        .chat-panel.open { display: flex; }
+
+        .chat-head {
+            padding: 16px 20px; border-bottom: 1px solid #f0f0f0;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .chat-head .ch-title { font-size: 15px; font-weight: 600; color: #1a1a2e; }
+        .chat-head .ch-sub { font-size: 12px; color: #999; }
+        .chat-head .ch-close { background: none; border: none; font-size: 18px; color: #ccc; cursor: pointer; padding: 4px; }
+
+        .chat-messages {
+            flex: 1; overflow-y: auto; padding: 16px 20px;
+            display: flex; flex-direction: column; gap: 12px;
+            max-height: 360px; min-height: 200px;
+        }
+        .chat-msg {
+            max-width: 85%; padding: 10px 14px; border-radius: 10px;
+            font-size: 14px; line-height: 1.5;
+        }
+        .chat-msg.user {
+            align-self: flex-end; background: #1a1a2e; color: #fff;
+            border-bottom-right-radius: 4px;
+        }
+        .chat-msg.bot {
+            align-self: flex-start; background: #f5f5f5; color: #333;
+            border-bottom-left-radius: 4px;
+        }
+        .chat-msg.typing { color: #999; font-style: italic; }
+
+        .chat-input-row {
+            padding: 12px 16px; border-top: 1px solid #f0f0f0;
+            display: flex; gap: 8px;
+        }
+        .chat-input-row input {
+            flex: 1; padding: 10px 14px; border: 1px solid #e0e0e0; border-radius: 8px;
+            font-size: 14px; outline: none; font-family: inherit;
+        }
+        .chat-input-row input:focus { border-color: #ccc; }
+        .chat-input-row button {
+            padding: 10px 18px; background: #1a1a2e; color: #fff; border: none;
+            border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer;
+            font-family: inherit;
+        }
+        .chat-input-row button:hover { background: #2a2a4e; }
+
+        .empty-state {
+            text-align: center; padding: 48px 20px; color: #999;
+        }
+        .empty-state h3 { font-size: 16px; font-weight: 600; color: #1a1a2e; margin-bottom: 6px; }
+        .empty-state p { font-size: 14px; }
+
+        .refresh-note { text-align: center; color: #999; font-size: 13px; margin-top: 24px; }
+
+        /* ── Document buttons ── */
+        .doc-btn {
+            display: inline-block; padding: 6px 14px; border-radius: 6px;
+            font-size: 12px; font-weight: 500; text-decoration: none;
+            background: #f5f5f5; color: #333; transition: all 0.15s;
+            border: none; cursor: pointer; font-family: inherit;
+        }
+        .doc-btn:hover { background: #eee; }
+        .doc-btn-dl { background: #1a1a2e; color: #fff; }
+        .doc-btn-dl:hover { background: #2a2a4e; }
+
+        .regen-btn {
+            padding: 10px 24px; background: #fff; color: #333; border: 1px solid #ddd;
+            border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer;
+            font-family: inherit; transition: all 0.15s;
+        }
+        .regen-btn:hover { border-color: #999; }
+        .regen-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* ── Meeting request button ── */
+        .meeting-btn {
+            padding: 10px 20px; background: #1a1a2e; color: #fff; border: none;
+            border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer;
+            font-family: inherit; transition: all 0.15s;
+        }
+        .meeting-btn:hover { background: #2a2a4e; }
+
+        /* ── Modal ── */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4); z-index: 300;
+            display: none; align-items: center; justify-content: center;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal {
+            background: #fff; border-radius: 12px; width: 420px; max-width: 90vw;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15); overflow: hidden;
+        }
+        .modal-header {
+            padding: 20px 24px; border-bottom: 1px solid #f0f0f0;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .modal-header h3 { font-size: 16px; font-weight: 600; color: #1a1a2e; margin: 0; }
+        .modal-header .close-btn { background: none; border: none; font-size: 20px; color: #ccc; cursor: pointer; }
+        .modal-body { padding: 20px 24px; }
+        .modal-body .field { margin-bottom: 16px; }
+        .modal-body .field label { display: block; font-size: 13px; font-weight: 500; color: #666; margin-bottom: 5px; }
+        .modal-body .field input,
+        .modal-body .field select,
+        .modal-body .field textarea {
+            width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px;
+            font-size: 14px; font-family: inherit; outline: none; box-sizing: border-box;
+        }
+        .modal-body .field input:focus,
+        .modal-body .field select:focus,
+        .modal-body .field textarea:focus { border-color: #999; }
+        .modal-body .field textarea { resize: vertical; min-height: 70px; }
+        .modal-body .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .modal-footer { padding: 16px 24px; border-top: 1px solid #f0f0f0; display: flex; justify-content: flex-end; gap: 10px; }
+        .modal-footer .cancel-btn {
+            padding: 10px 20px; background: #fff; color: #666; border: 1px solid #ddd;
+            border-radius: 8px; font-size: 14px; cursor: pointer; font-family: inherit;
+        }
+        .modal-footer .submit-btn {
+            padding: 10px 20px; background: #1a1a2e; color: #fff; border: none;
+            border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit;
+        }
+        .modal-footer .submit-btn:hover { background: #2a2a4e; }
+        .modal-footer .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .toast-msg {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: #1a1a2e; color: #fff; padding: 12px 24px; border-radius: 8px;
+            font-size: 14px; z-index: 400; display: none;
+        }
+        .toast-msg.show { display: block; }
+
+        @media (max-width: 700px) {
+            .dash-bar, .tab-bar, .dash-content { padding-left: 16px; padding-right: 16px; }
+            .stats-row { grid-template-columns: 1fr; }
+            .chat-panel { width: calc(100% - 32px); right: 16px; }
+        }
+    </style>
+    {% if data.status == 'processing' %}
+    <meta http-equiv="refresh" content="10">
+    {% endif %}
+</head>
+<body>
+
+<!-- Header bar -->
+<div class="dash-bar">
+    <div class="db-left">
+        <h1>{{ agency_name }}</h1>
+        <p>Welcome, {{ data.full_name }}</p>
+    </div>
+    <div class="db-right">
+        <button class="meeting-btn" onclick="openMeetingModal()">Request a Meeting</button>
+        <a href="/a/{{ slug }}/logout-client" style="font-size:13px;color:#999;text-decoration:none;">Sign out</a>
+        <span class="db-id">{{ onboarding_id }}</span>
+        <span class="db-badge db-badge-{{ data.status }}">
+            <span class="dot"></span>
+            {{ data.status|title }}
+        </span>
+    </div>
+</div>
+
+<!-- Tabs -->
+<div class="tab-bar">
+    <a href="/a/{{ slug }}/dashboard/{{ onboarding_id }}" class="{{ 'active' if tab == 'overview' }}">Overview</a>
+    <a href="/a/{{ slug }}/dashboard/{{ onboarding_id }}/documents" class="{{ 'active' if tab == 'documents' }}">Documents</a>
+    <a href="/a/{{ slug }}/dashboard/{{ onboarding_id }}/tools" class="{{ 'active' if tab == 'tools' }}">Tools</a>
+</div>
+
+<div class="dash-content">
+
+    {% if tab == 'overview' %}
+
+    <!-- Stats -->
+    <div class="stats-row">
+        <div class="stat">
+            <div class="sv">{{ data.documents|length if data.documents else 0 }}</div>
+            <div class="sl">Documents</div>
+        </div>
+        <div class="stat">
+            <div class="sv">{{ data.tasks_created or 0 }}</div>
+            <div class="sl">Tasks</div>
+        </div>
+        <div class="stat">
+            <div class="sv">{{ data.services|length if data.services else 1 }}</div>
+            <div class="sl">Services</div>
+        </div>
+    </div>
+
+    <!-- Project details -->
+    <div class="card">
+        <div class="card-header">Project details</div>
+        <div class="card-body">
+            <div class="row"><span class="label">Company</span><span class="value">{{ data.full_name }}</span></div>
+            <div class="row"><span class="label">Contact</span><span class="value">{{ data.manager_name or data.full_name }}</span></div>
+            <div class="row"><span class="label">Email</span><span class="value">{{ data.email }}</span></div>
+            <div class="row"><span class="label">Service</span><span class="value">{{ data.role|replace('_', ' ')|title }}</span></div>
+            <div class="row"><span class="label">Start date</span><span class="value">{{ data.start_date }}</span></div>
+            <div class="row"><span class="label">Industry</span><span class="value">{{ data.department or '—' }}</span></div>
+            <div class="row"><span class="label">Budget</span><span class="value">{{ data.budget or '—' }}</span></div>
+            {% if data.clickup_list_url %}
+            <div class="row"><span class="label">Project board</span><span class="value"><a href="{{ data.clickup_list_url }}" target="_blank">Open in ClickUp</a></span></div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Onboarding checklist -->
+    <div class="card">
+        <div class="card-header">Onboarding checklist</div>
+        <div class="card-body">
+            <ul class="checklist">
+                <li><input type="checkbox" checked disabled> Submit onboarding form</li>
+                <li><input type="checkbox" {{ 'checked' if data.documents }} disabled> Review generated documents</li>
+                <li><input type="checkbox" disabled> Schedule kickoff meeting</li>
+                <li><input type="checkbox" disabled> Share brand assets and logins</li>
+                <li><input type="checkbox" disabled> Approve first deliverables</li>
+            </ul>
+        </div>
+    </div>
+
+    {% if data.status == 'processing' %}
+    <div class="refresh-note">Your onboarding is being processed. This page refreshes automatically.</div>
+    {% endif %}
+
+    {% elif tab == 'documents' %}
+
+    {% set has_content = data.documents and data.documents|selectattr('content')|list|length > 0 %}
+
+    {% if data.documents and has_content %}
+    {% set doc_descriptions = {
+        'welcome_guide': 'Your personalized welcome and what to expect.',
+        'day1_guide': 'Everything you need for a successful project kickoff.',
+        '90day_plan': 'Your customized 90-day roadmap to results.',
+        'tools_access': 'How to access your client portal and tools.',
+        'terms_policies': 'Service terms, policies, and guidelines.'
+    } %}
+    <div class="doc-grid">
+        {% for doc in data.documents %}
+        {% if doc.content %}
+        <div class="doc-card" style="cursor:default;">
+            <span class="dc-badge {{ 'read' if doc.read else 'unread' }}">{{ 'Read' if doc.read else 'New' }}</span>
+            <a href="/a/{{ slug }}/dashboard/{{ onboarding_id }}/document/{{ doc.type }}" style="text-decoration:none;color:inherit;">
+                <div class="dc-title">{{ doc.title }}</div>
+                <div class="dc-desc">{{ doc_descriptions.get(doc.type, 'View this document.') }}</div>
+            </a>
+            <div style="margin-top:14px;display:flex;gap:8px;">
+                <a href="/a/{{ slug }}/dashboard/{{ onboarding_id }}/document/{{ doc.type }}" class="doc-btn">Read</a>
+                <a href="/a/{{ slug }}/dashboard/{{ onboarding_id }}/document/{{ doc.type }}/pdf" class="doc-btn doc-btn-dl">Download PDF</a>
+            </div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+
+    <div style="margin-top:20px;text-align:center;">
+        <button class="regen-btn" onclick="regenerateDocs()">Regenerate All Documents</button>
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+        <h3>Documents are being prepared</h3>
+        <p>Your personalized documents will appear here shortly.</p>
+        <button class="regen-btn" style="margin-top:16px;" onclick="regenerateDocs()">Generate Documents Now</button>
+    </div>
+    {% endif %}
+
+    {% elif tab == 'tools' %}
+
+    <div class="tools-grid">
+        {% set tools = [
+            ('content_calendar', 'Content Calendar', 'Plan and schedule your content across all platforms.', 'C', '#059669', '#ecfdf5'),
+            ('competitor_analysis', 'Competitor Analysis', 'AI-powered breakdown of competitor strategies.', 'A', '#3b82f6', '#eff6ff'),
+            ('campaign_ideas', 'Campaign Ideas', 'Tailored campaign concepts for your goals and audience.', 'I', '#d97706', '#fef3c7'),
+            ('audience_personas', 'Audience Personas', 'Build detailed buyer personas to sharpen messaging.', 'P', '#db2777', '#fce7f3'),
+            ('social_copy', 'Social Copy Generator', 'Generate on-brand social media captions and copy.', 'S', '#7c3aed', '#f3e8ff'),
+            ('seo_keywords', 'SEO Keyword Research', 'Discover keyword opportunities for your strategy.', 'K', '#16a34a', '#f0fdf4')
+        ] %}
+        {% for key, title, desc, icon, color, bg in tools %}
+        <a href="/a/{{ slug }}/dashboard/{{ onboarding_id }}/tool/{{ key }}" class="tool-card" style="text-decoration:none;color:inherit;">
+            <div class="tc-icon" style="background:{{ bg }};color:{{ color }};">{{ icon }}</div>
+            <div class="tc-title">{{ title }}</div>
+            <div class="tc-desc">{{ desc }}</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+                <span class="tc-btn">Open Tool</span>
+                {% if tool_counts and tool_counts.get(key) %}
+                <span style="font-size:12px;color:#999;">{{ tool_counts[key] }} saved</span>
+                {% endif %}
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+
+    {% endif %}
+</div>
+
+<!-- Meeting request modal -->
+<div class="modal-overlay" id="meeting-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Request a Meeting</h3>
+            <button class="close-btn" onclick="closeMeetingModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="field">
+                <label>Topic *</label>
+                <select id="mtg-topic">
+                    <option value="">Select a topic...</option>
+                    <option value="Kickoff call">Kickoff call</option>
+                    <option value="Strategy review">Strategy review</option>
+                    <option value="Progress update">Progress update</option>
+                    <option value="Campaign review">Campaign review</option>
+                    <option value="Budget discussion">Budget discussion</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="field-row">
+                <div class="field">
+                    <label>Preferred date *</label>
+                    <input type="date" id="mtg-date">
+                </div>
+                <div class="field">
+                    <label>Preferred time</label>
+                    <select id="mtg-time">
+                        <option value="">Any time</option>
+                        <option value="9:00 AM">9:00 AM</option>
+                        <option value="10:00 AM">10:00 AM</option>
+                        <option value="11:00 AM">11:00 AM</option>
+                        <option value="12:00 PM">12:00 PM</option>
+                        <option value="1:00 PM">1:00 PM</option>
+                        <option value="2:00 PM">2:00 PM</option>
+                        <option value="3:00 PM">3:00 PM</option>
+                        <option value="4:00 PM">4:00 PM</option>
+                        <option value="5:00 PM">5:00 PM</option>
+                    </select>
+                </div>
+            </div>
+            <div class="field">
+                <label>Additional notes</label>
+                <textarea id="mtg-notes" placeholder="Anything you'd like to discuss..."></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="cancel-btn" onclick="closeMeetingModal()">Cancel</button>
+            <button class="submit-btn" id="mtg-submit" onclick="submitMeeting()">Send Request</button>
+        </div>
+    </div>
+</div>
+<div class="toast-msg" id="toast-msg"></div>
+
+<!-- AI Chatbot -->
+<button class="chat-toggle" id="chat-toggle" onclick="toggleChat()" title="AI Assistant">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+</button>
+
+<div class="chat-panel" id="chat-panel">
+    <div class="chat-head">
+        <div>
+            <div class="ch-title">AI Marketing Assistant</div>
+            <div class="ch-sub">Powered by {{ agency_name }}</div>
+        </div>
+        <button class="ch-close" onclick="toggleChat()">&times;</button>
+    </div>
+    <div class="chat-messages" id="chat-messages">
+        <div class="chat-msg bot">Hi! I'm your AI marketing assistant. I can help with strategy, content ideas, competitor analysis, and more. What can I help you with?</div>
+    </div>
+    <div class="chat-input-row">
+        <input type="text" id="chat-input" placeholder="Ask about marketing, strategy..." onkeydown="if(event.key==='Enter')sendChat()">
+        <button onclick="sendChat()">Send</button>
+    </div>
+</div>
+
+<script>
+// ── Regenerate documents ──
+function regenerateDocs() {
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = 'Generating...';
+
+    fetch('/a/{{ slug }}/dashboard/{{ onboarding_id }}/regenerate-documents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        showToast(data.message || 'Documents are being generated.');
+        btn.textContent = 'Generating... Refresh in a minute';
+        setTimeout(() => location.reload(), 60000);
+    })
+    .catch(() => {
+        showToast('Failed to start generation.');
+        btn.disabled = false;
+        btn.textContent = 'Generate Documents Now';
+    });
+}
+
+// ── Meeting request ──
+const MEETING_URL = '/a/{{ slug }}/dashboard/{{ onboarding_id }}/request-meeting';
+
+function openMeetingModal() {
+    document.getElementById('meeting-modal').classList.add('open');
+    // Default date to tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    document.getElementById('mtg-date').value = tomorrow.toISOString().split('T')[0];
+}
+
+function closeMeetingModal() {
+    document.getElementById('meeting-modal').classList.remove('open');
+}
+
+function showToast(msg) {
+    const el = document.getElementById('toast-msg');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+function submitMeeting() {
+    const topic = document.getElementById('mtg-topic').value;
+    const date = document.getElementById('mtg-date').value;
+    const time = document.getElementById('mtg-time').value;
+    const notes = document.getElementById('mtg-notes').value;
+
+    if (!topic || !date) {
+        showToast('Please select a topic and date.');
+        return;
+    }
+
+    const btn = document.getElementById('mtg-submit');
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+
+    fetch(MEETING_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic, date, time, notes })
+    })
+    .then(r => r.json())
+    .then(data => {
+        closeMeetingModal();
+        showToast(data.success ? 'Meeting request sent successfully.' : (data.error || 'Something went wrong.'));
+        btn.disabled = false;
+        btn.textContent = 'Send Request';
+        // Reset form
+        document.getElementById('mtg-topic').value = '';
+        document.getElementById('mtg-notes').value = '';
+    })
+    .catch(() => {
+        showToast('Failed to send request. Please try again.');
+        btn.disabled = false;
+        btn.textContent = 'Send Request';
+    });
+}
+
+// Close modal on overlay click
+document.getElementById('meeting-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeMeetingModal();
+});
+
+// ── Chat ──
+const CHAT_URL = '/a/{{ slug }}/dashboard/{{ onboarding_id }}/chat';
+let chatHistory = [];
+
+function toggleChat() {
+    document.getElementById('chat-panel').classList.toggle('open');
+    if (document.getElementById('chat-panel').classList.contains('open')) {
+        document.getElementById('chat-input').focus();
+    }
+}
+
+function openChat(prefill) {
+    document.getElementById('chat-panel').classList.add('open');
+    document.getElementById('chat-input').value = prefill;
+    document.getElementById('chat-input').focus();
+}
+
+function sendChat() {
+    const input = document.getElementById('chat-input');
+    const msg = input.value.trim();
+    if (!msg) return;
+    input.value = '';
+
+    const messages = document.getElementById('chat-messages');
+
+    // User message
+    const userDiv = document.createElement('div');
+    userDiv.className = 'chat-msg user';
+    userDiv.textContent = msg;
+    messages.appendChild(userDiv);
+
+    // Typing indicator
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'chat-msg bot typing';
+    typingDiv.textContent = 'Thinking...';
+    messages.appendChild(typingDiv);
+    messages.scrollTop = messages.scrollHeight;
+
+    chatHistory.push({ role: 'user', content: msg });
+
+    fetch(CHAT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg, history: chatHistory })
+    })
+    .then(r => r.json())
+    .then(data => {
+        messages.removeChild(typingDiv);
+        const botDiv = document.createElement('div');
+        botDiv.className = 'chat-msg bot';
+        botDiv.textContent = data.reply;
+        messages.appendChild(botDiv);
+        messages.scrollTop = messages.scrollHeight;
+        chatHistory.push({ role: 'assistant', content: data.reply });
+    })
+    .catch(() => {
+        messages.removeChild(typingDiv);
+        const errDiv = document.createElement('div');
+        errDiv.className = 'chat-msg bot';
+        errDiv.textContent = 'Sorry, something went wrong. Please try again.';
+        messages.appendChild(errDiv);
+    });
+}
+
+// Persist brand checklist to localStorage
+document.querySelectorAll('[id^="bh"]').forEach(cb => {
+    const key = 'bh_{{ onboarding_id }}_' + cb.id;
+    cb.checked = localStorage.getItem(key) === 'true';
+    cb.addEventListener('change', () => localStorage.setItem(key, cb.checked));
+});
+</script>
+</body>
+</html>

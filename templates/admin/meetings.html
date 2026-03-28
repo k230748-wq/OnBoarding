@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ agency.name }} — Meeting Requests</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern-ui.css') }}">
+    <style>
+        body { background: #f8f8fb; }
+
+        .sidebar {
+            position: fixed; top: 0; left: 0; bottom: 0;
+            width: 240px; background: #fff;
+            border-right: 1px solid #eee;
+            display: flex; flex-direction: column; z-index: 50;
+        }
+        .sidebar-brand { padding: 24px 24px 20px; border-bottom: 1px solid #f0f0f0; }
+        .sidebar-brand .name { font-size: 16px; font-weight: 700; color: #1a1a2e; display: flex; align-items: center; gap: 8px; }
+        .sidebar-brand .name .dot { width: 8px; height: 8px; border-radius: 50%; background: linear-gradient(135deg, {{ agency.primary_color }}, {{ agency.secondary_color }}); }
+        .sidebar-brand .tagline { font-size: 11px; color: #aaa; margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+
+        .sidebar-nav { padding: 16px 12px; flex: 1; }
+        .sidebar-nav a {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 14px; border-radius: 8px;
+            font-size: 14px; font-weight: 500; color: #666;
+            text-decoration: none; transition: all 0.15s; margin-bottom: 2px;
+        }
+        .sidebar-nav a:hover { background: #f5f5fa; color: #333; }
+        .sidebar-nav a.active { background: linear-gradient(135deg, {{ agency.primary_color }}12, {{ agency.secondary_color }}12); color: {{ agency.primary_color }}; font-weight: 600; }
+        .sidebar-nav a .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+        .nav-badge { background: #dc2626; color: #fff; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 50px; margin-left: auto; }
+
+        .sidebar-footer { padding: 16px 20px; border-top: 1px solid #f0f0f0; font-size: 13px; }
+        .sidebar-footer .user-name { font-weight: 600; color: #333; }
+        .sidebar-footer .user-email { color: #aaa; font-size: 12px; margin-top: 2px; }
+        .sidebar-footer a { color: #bbb; text-decoration: none; font-size: 12px; margin-top: 8px; display: inline-block; }
+
+        .main { margin-left: 240px; min-height: 100vh; }
+
+        .topbar {
+            padding: 20px 36px; display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid #eee; background: #fff;
+        }
+        .topbar h1 { font-size: 20px; font-weight: 700; color: #1a1a2e; }
+
+        .content { padding: 28px 36px; }
+
+        .table-wrap {
+            background: #fff; border-radius: 10px; border: 1px solid #eee; overflow: hidden;
+        }
+        .table-header {
+            padding: 16px 24px; display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .table-header h2 { font-size: 15px; font-weight: 600; color: #1a1a2e; }
+        .table-header .count { font-size: 12px; color: #aaa; background: #f5f5f5; padding: 3px 10px; border-radius: 50px; }
+
+        table { width: 100%; border-collapse: collapse; }
+        table th {
+            padding: 10px 24px; text-align: left; font-size: 11px;
+            color: #aaa; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+            background: #fafafa; border-bottom: 1px solid #f0f0f0;
+        }
+        table td {
+            padding: 14px 24px; font-size: 14px; border-bottom: 1px solid #f5f5f5; color: #444;
+        }
+        table tr:last-child td { border-bottom: none; }
+        table tr:hover td { background: #fafbff; }
+
+        .badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 4px 10px; border-radius: 50px; font-size: 12px; font-weight: 600;
+        }
+        .badge-pending { background: #fffbeb; color: #d97706; }
+        .badge-confirmed { background: #ecfdf5; color: #059669; }
+        .badge-declined { background: #fef2f2; color: #dc2626; }
+
+        .action-btn {
+            padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 500;
+            border: none; cursor: pointer; font-family: inherit; transition: all 0.15s;
+        }
+        .btn-confirm { background: #ecfdf5; color: #059669; }
+        .btn-confirm:hover { background: #d1fae5; }
+        .btn-decline { background: #fef2f2; color: #dc2626; }
+        .btn-decline:hover { background: #fee2e2; }
+
+        .empty {
+            text-align: center; padding: 64px 20px;
+        }
+        .empty h3 { font-size: 16px; font-weight: 600; color: #1a1a2e; margin-bottom: 6px; }
+        .empty p { font-size: 14px; color: #999; }
+
+        @media (max-width: 800px) {
+            .sidebar { display: none; }
+            .main { margin-left: 0; }
+            .content { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="sidebar-brand">
+        <div class="name"><span class="dot"></span> {{ agency.name }}</div>
+        <div class="tagline">Agency Dashboard</div>
+    </div>
+    <nav class="sidebar-nav">
+        <a href="{{ url_for('admin_dashboard') }}"><span class="nav-icon">◉</span> Clients</a>
+        <a href="{{ url_for('admin_meetings') }}" class="active"><span class="nav-icon">☷</span> Meetings{% if pending_meetings %}<span class="nav-badge">{{ pending_meetings }}</span>{% endif %}</a>
+        <a href="{{ url_for('admin_mail') }}"><span class="nav-icon">✉</span> Mail</a>
+        <a href="{{ url_for('admin_onboarding_setup') }}"><span class="nav-icon">&#9889;</span> Onboarding Setup</a>
+        <a href="{{ url_for('admin_settings') }}"><span class="nav-icon">⚙</span> Settings</a>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="user-name">{{ owner.name }}</div>
+        <div class="user-email">{{ owner.email }}</div>
+        <a href="{{ url_for('logout') }}">Sign out</a>
+    </div>
+</div>
+
+<div class="main">
+    <div class="topbar">
+        <h1>Meeting Requests</h1>
+    </div>
+
+    <div class="content">
+        <div class="table-wrap">
+            <div class="table-header">
+                <h2>All requests</h2>
+                <span class="count">{{ meetings|length }}</span>
+            </div>
+
+            {% if meetings %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Client</th>
+                        <th>Topic</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Status</th>
+                        <th>Requested</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in meetings %}
+                    <tr id="row-{{ m.id }}">
+                        <td style="font-weight:600;color:#1a1a2e;">{{ m.client_name }}<br><span style="font-size:12px;color:#aaa;font-weight:400;">{{ m.client_email }}</span></td>
+                        <td>{{ m.topic }}</td>
+                        <td>{{ m.preferred_date }}</td>
+                        <td>{{ m.preferred_time or 'Any' }}</td>
+                        <td><span class="badge badge-{{ m.status }}" id="badge-{{ m.id }}">{{ m.status|title }}</span></td>
+                        <td style="color:#aaa;">{{ m.created_at[:10] }}</td>
+                        <td id="actions-{{ m.id }}">
+                            {% if m.status == 'pending' %}
+                            <button class="action-btn btn-confirm" onclick="updateStatus('{{ m.id }}', 'confirmed')">Confirm</button>
+                            <button class="action-btn btn-decline" onclick="updateStatus('{{ m.id }}', 'declined')">Decline</button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty">
+                <h3>No meeting requests</h3>
+                <p>When clients request meetings, they'll appear here.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function updateStatus(id, status) {
+    fetch(`/admin/meetings/${id}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            const badge = document.getElementById('badge-' + id);
+            badge.className = 'badge badge-' + status;
+            badge.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+            document.getElementById('actions-' + id).innerHTML = '';
+        }
+    });
+}
+</script>
+</body>
+</html>

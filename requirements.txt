@@ -1,0 +1,7 @@
+flask==3.0.0
+python-dotenv
+requests
+openai
+pyairtable
+fpdf2
+gunicorn
